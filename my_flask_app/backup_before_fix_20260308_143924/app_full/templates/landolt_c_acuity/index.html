@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ランドル環 視力測定（デモ）</title>
+<style>
+  :root {
+    --bg: #0b1020;
+    --panel: #12182c;
+    --ink: #e7ecff;
+    --muted: #9fb0ffcc;
+    --accent: #6ea8ff;
+
+    /* === 追加: ランドル環とボード背景のテーマ用 === */
+    --board-bg: #0a1028;          /* 現在の背景 */
+    --landolt-color: #ffffff;     /* 現在のランドル環色 */
+    --board-hint: #9fb0ffcc;      /* ボード右下ヒント色 */
+  }
+
+  html, body { height: 100%; }
+  body {
+    margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif;
+    color: var(--ink); background: radial-gradient(1000px 600px at 15% 10%, #101938, #080d1a 60%, #050911);
+    display: grid; grid-template-columns: 360px 1fr; gap: 16px; align-items: stretch;
+  }
+  .panel {
+    background: var(--panel); border-radius: 16px; box-shadow: 0 8px 30px #0008; padding: 16px 16px 18px;
+  }
+  h1 { font-size: 20px; margin: 6px 0 12px; letter-spacing: 0.5px; }
+  h2 { font-size: 14px; margin: 14px 0 8px; color: var(--muted); font-weight: 600; }
+  label { display:block; font-size: 14px; margin: 8px 0 6px; color: var(--muted); }
+  select, input[type="number"], input[type="text"] {
+    width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 10px; border: 1px solid #2a345a;
+    background: #0c1230; color: var(--ink); outline: none;
+  }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .btn {
+    appearance: none; border: 0; background: #213063; color: #fff; padding: 10px 12px; border-radius: 12px;
+    cursor: pointer; font-weight: 600; letter-spacing: .2px; box-shadow: 0 2px 0 #111a3b inset, 0 0 0 1px #31407f;
+    transition: transform .05s ease, filter .2s ease; user-select: none;
+  }
+  .btn:hover { filter: brightness(1.05); }
+  .btn:active { transform: translateY(1px); }
+  .btn.ghost { background: #121a39; box-shadow: 0 0 0 1px #2c386f; }
+  .btn.warn  { background: #6b2a2a; box-shadow: 0 0 0 1px #894242; }
+  .btn.ok    { background: #245d3e; box-shadow: 0 0 0 1px #337454; }
+  .buttons { display:flex; gap:10px; margin-top:10px; flex-wrap: wrap; }
+
+  /* Calibration */
+  .cal-box { display:grid; gap:10px; align-items:center; }
+  .cal-bar-wrapper { background:#0c1230; border-radius:12px; padding:10px; border:1px solid #2a345a; }
+  .cal-bar { height: 24px; background: linear-gradient(90deg, #6ea8ff, #99c1ff); border-radius: 8px; }
+  .cal-guides { display:flex; justify-content:space-between; font-size:12px; color: var(--muted); margin-top: 6px; }
+  input[type="range"] { width: 100%; accent-color: var(--accent); }
+
+  /* Right side display */
+  .stage {
+    display: grid; grid-template-rows: 1fr 1fr; height: calc(100vh - 16px); gap: 10px; margin: 8px 16px 8px 0;
+  }
+
+  /* === 変更: ボード背景はテーマ変数で切替 === */
+  .board {
+    display: grid; place-items: center;
+    background: var(--board-bg);
+    border-radius: 16px; position: relative; overflow: hidden;
+  }
+  .board svg { max-width: none; }
+  .stats { display:none; }
+  .big { font-size: 32px; font-weight: 700; color: #fff; }
+  .mini { font-size: 13px; color: var(--muted); }
+
+  .result-box { display:grid; grid-template-columns: 1fr; gap:6px; font-size:14px; }
+  .pill { display:inline-block; padding: 2px 8px; border-radius: 999px; background: #0f1737; border:1px solid #2c386f; }
+
+  .hidden { display: none !important; }
+  /* ===== 回答パッド（方向ボタン）と判定表示 ===== */
+  .answer-panel { display:grid; grid-template-rows: auto 1fr; place-items: center; }
+  .answer-panel h2 { margin: 0 0 8px; }
+  .arrow-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(64px, 112px));
+    grid-template-rows: repeat(3, minmax(64px, 112px));
+    gap: 10px; width: fit-content; place-content: center;
+    justify-items: center; align-items: center; margin: 8px auto 0;
+  }
+  .arrow-btn { font-size: 24px; display: grid; place-items: center; width: 100%; aspect-ratio: 1 / 1; border-radius: 12px; }
+  .arrow-btn[disabled] { opacity: .4; }
+  .judge { position: absolute; inset: 0; display: grid; place-items: center; font-size: 42px; font-weight: 800; letter-spacing: .1em; filter: drop-shadow(0 6px 18px #0009); }
+  .judge.hidden { display: none; }
+  .judge.correct { color: #7cffb0; }
+  .judge.wrong { color: #ff9a9a; }
+  .info-panel { display: none; }
+
+  /* === 追加: ボード右下ヒントをテーマ対応 === */
+  .board-hint { color: var(--board-hint); }
+</style>
+</head>
+<body>
+  <aside class="panel">
+    <h1>ランドル環 視力測定（デモ）</h1>
+
+    <h2>1) スケール校正</h2>
+    <div class="cal-box">
+      <label>物差しで下のバーを <b id="target-mm">50</b> mm に合わせてください（スライダーで調整）</label>
+      <div class="cal-bar-wrapper">
+        <div id="calBar" class="cal-bar" style="width:200px"></div>
+      </div>
+      <input id="calSlider" type="range" min="10" max="800" step="1" value="200" />
+      <div class="cal-guides">
+        <span>現在のバー幅: <b id="calPx">200</b> px</span>
+        <span>画面スケール: <b id="pxPerMm">未設定</b> px/mm</span>
+      </div>
+      <div class="row">
+        <div>
+          <label>校正ターゲット長 (mm)</label>
+          <input id="calMmInput" type="number" value="50" min="10" max="200" />
+        </div>
+        <div style="display:grid; align-content:end;">
+          <button id="setScaleBtn" class="btn ok">校正を確定</button>
+        </div>
+      </div>
+    </div>
+
+    <h2>2) 条件設定</h2>
+
+    <!-- === 追加: 色テーマ選択 === -->
+    <label>表示テーマ（背景色 / ランドル環色）</label>
+    <select id="themeSel">
+      <option value="dark" selected>現在（ダーク背景 + 白ランドル環）</option>
+      <option value="white">白背景 + 黒ランドル環（一般的）</option>
+      <option value="orange">オレンジ背景（ライト） + 黒ランドル環</option>
+    </select>
+
+    <label>測定距離 (m)</label>
+    <select id="distance">
+      <option value="0.5">0.5 m</option>
+      <option value="1">1 m</option>
+      <option value="3" selected>3 m</option>
+      <option value="5">5 m</option>
+    </select>
+
+    <label>開始視力レベル（小数視力）</label>
+    <select id="startAcuity"></select>
+
+    <div class="buttons">
+      <button id="startBtn" class="btn">測定開始</button>
+      <button id="endBtn" class="btn warn" disabled>終了</button>
+      <button id="resetBtn" class="btn ghost">リセット</button>
+    </div>
+
+    <h2>結果</h2>
+    <div class="result-box">
+      <div>現在: <span id="nowAcuity" class="pill">—</span></div>
+      <div>判定: <span id="judgePill" class="pill">—</span></div>
+      <div>正解: <span id="scoreOK">0</span> / 誤答: <span id="scoreNG">0</span></div>
+      <div>最終結果: <span id="finalAcuity" class="pill">—</span></div>
+      <div class="mini">※ このデモは教育目的です。医療用途の診断には使用しないでください。</div>
+    </div>
+  </aside>
+
+  <main class="stage">
+    <div class="panel stats">
+      <div>距離: <b id="statDist">3.0m</b></div>
+      <div>サイズ(外径): <b id="statSize">—</b></div>
+      <div>ストローク幅: <b id="statStroke">—</b></div>
+      <div>向き: <b id="statOri">—</b></div>
+    </div>
+
+    <div id="board" class="board panel">
+      <!-- ランドル環SVG がここに入る -->
+      <div id="judgeOverlay" class="judge hidden">&nbsp;</div>
+      <div class="mini board-hint" style="position:absolute; bottom:10px; right:12px;">矢印ボタン/矢印キーで回答</div>
+    </div>
+
+    <div class="panel answer-panel">
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <h2 style="margin:0;color:var(--muted);">回答パッド</h2>
+        <label class="mini" style="display:flex; align-items:center; gap:6px;">
+          <input id="soundToggle" type="checkbox" checked> 効果音
+        </label>
+      </div>
+      <div class="arrow-grid">
+        <button class="btn arrow-btn" data-deg="225">↖</button>
+        <button class="btn arrow-btn" data-deg="270">↑</button>
+        <button class="btn arrow-btn" data-deg="315">↗</button>
+        <button class="btn arrow-btn" data-deg="180">←</button>
+        <button class="btn arrow-btn" data-deg="" disabled>・</button>
+        <button class="btn arrow-btn" data-deg="0">→</button>
+        <button class="btn arrow-btn" data-deg="135">↙</button>
+        <button class="btn arrow-btn" data-deg="90">↓</button>
+        <button class="btn arrow-btn" data-deg="45">↘</button>
+      </div>
+    </div>
+
+    <div class="panel info-panel" style="display:grid; gap:8px;">
+      <div class="mini">説明</div>
+      <div>
+        ・<b>校正</b>: 実物の定規でバーを測り、指定mmに一致したところで「校正を確定」。<br/>
+        ・<b>開始</b>: 開始視力を選び「測定開始」。大きいサイズ→小さいサイズの順に表示されます。<br/>
+        ・<b>操作</b>: 回答は矢印ボタン/矢印キー（テンキー対応）。<br/>
+        ・<b>終了</b>: 「最後に正解した視力」を最終結果として確定します。<br/>
+        ・<b>リセット</b>: 条件と表示を初期化します。
+      </div>
+    </div>
+  </main>
+
+<script>
+(() => {
+  // ===== 数学ユーティリティ =====
+  const DEG = Math.PI/180;
+  const arcminToRad = (arcmin) => arcmin * DEG / 60; // arcmin → rad
+  // Landolt C の外径は 5×MAR（arcmin）。
+  // 小数視力 A, 距離 D(m) のとき外径(mm) = tan( (5/A) arcmin ) * D(m) * 1000
+  function landoltOuterDiameterMM(acuity, distanceM) {
+    const theta = arcminToRad(5 / acuity);
+    return Math.tan(theta) * distanceM * 1000;
+  }
+
+  // ===== DOM 取得 =====
+  const calBar = document.getElementById('calBar');
+  const calSlider = document.getElementById('calSlider');
+  const calPx = document.getElementById('calPx');
+  const pxPerMmLabel = document.getElementById('pxPerMm');
+  const setScaleBtn = document.getElementById('setScaleBtn');
+  const calMmInput = document.getElementById('calMmInput');
+
+  const themeSel = document.getElementById('themeSel'); // ★追加
+
+  const distanceSel = document.getElementById('distance');
+  const startAcuitySel = document.getElementById('startAcuity');
+
+  const startBtn = document.getElementById('startBtn');
+  const endBtn = document.getElementById('endBtn');
+  const resetBtn = document.getElementById('resetBtn');
+
+  const nowAcuity = document.getElementById('nowAcuity');
+  const finalAcuity = document.getElementById('finalAcuity');
+
+  const statDist = document.getElementById('statDist');
+  const statSize = document.getElementById('statSize');
+  const statStroke = document.getElementById('statStroke');
+  const statOri = document.getElementById('statOri');
+
+  const judgePill = document.getElementById('judgePill');
+  const scoreOK = document.getElementById('scoreOK');
+  const scoreNG = document.getElementById('scoreNG');
+  const soundToggle = document.getElementById('soundToggle');
+  const arrowBtns = document.querySelectorAll('.arrow-btn');
+  const judgeOverlay = document.getElementById('judgeOverlay');
+
+  const board = document.getElementById('board');
+
+  // ===== 状態 =====
+  let pxPerMm = null; // 画面スケール（px/mm）
+  let running = false;
+
+  let sequence = [];      // 視力配列（開始→2.0）
+  let idx = -1;           // 現在インデックス
+  let currentAcuity = null;       // ★追加: 現在表示中の視力
+  let lastCorrectAcuity = null;   // ★追加: 最後に正解した視力（最終結果はこれ）
+
+  let currentOri = null;
+  let correctCount = 0, wrongCount = 0;
+  let audioCtx = null;
+
+  // よく使われる小数視力の刻み
+  const defaultAcuities = [0.1, 0.12, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.5, 2.0];
+
+  function populateStartOptions() {
+    startAcuitySel.innerHTML = '';
+    defaultAcuities.forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = a; opt.textContent = a.toFixed(2).replace(/\.00$/, '.0');
+      if (a === 0.3) opt.selected = true;
+      startAcuitySel.appendChild(opt);
+    });
+  }
+
+  // ===== 追加: テーマ切替 =====
+  const THEMES = {
+    dark:   { boardBg: '#0a1028', landolt: '#ffffff', hint: '#9fb0ffcc' },
+    white:  { boardBg: '#ffffff', landolt: '#000000', hint: '#333333cc' },
+    orange: { boardBg: '#F3D9B5', landolt: '#000000', hint: '#2b2b2bcc' },
+  };
+
+  function applyTheme(key) {
+    const t = THEMES[key] || THEMES.dark;
+    document.documentElement.style.setProperty('--board-bg', t.boardBg);
+    document.documentElement.style.setProperty('--landolt-color', t.landolt);
+    document.documentElement.style.setProperty('--board-hint', t.hint);
+
+    // すでに表示中なら、同じ視力で再描画して色も反映
+    if (running && currentAcuity != null) {
+      showLandolt(currentAcuity);
+    }
+  }
+
+  themeSel.addEventListener('change', () => applyTheme(themeSel.value));
+  applyTheme(themeSel.value); // 初期適用
+
+  // ===== 校正 UI =====
+  function updateCalUI() {
+    calBar.style.width = calSlider.value + 'px';
+    calPx.textContent = calSlider.value;
+  }
+  calSlider.addEventListener('input', updateCalUI);
+  updateCalUI();
+
+  setScaleBtn.addEventListener('click', () => {
+    const targetMm = Math.max(5, Math.min(500, Number(calMmInput.value) || 50));
+    const currentPx = Number(calSlider.value);
+    pxPerMm = currentPx / targetMm;
+    pxPerMmLabel.textContent = pxPerMm.toFixed(2);
+    flash(board);
+  });
+
+  // ===== 測定ロジック =====
+  function buildSequence(startAcuity) {
+    const arr = defaultAcuities.filter(a => a >= startAcuity);
+    return arr; // 0.1→2.0（視力値が上がるほどランドル環は小さくなる）
+  }
+
+  const eightDirs = [0,45,90,135,180,225,270,315];
+  function randomOrientation() { return eightDirs[Math.floor(Math.random()*eightDirs.length)]; }
+
+  function showLandolt(acuity) {
+    if (!pxPerMm) { alert('まずスケール校正を完了してください。'); return; }
+    const D = Number(distanceSel.value);
+    const outerMM = landoltOuterDiameterMM(acuity, D);
+    const strokeMM = outerMM / 5;
+    const innerMM = outerMM * 3/5;
+
+    const outerPX = outerMM * pxPerMm;
+    const strokePX = strokeMM * pxPerMm;
+    const innerPX = innerMM * pxPerMm;
+
+    const ori = randomOrientation();
+    currentOri = ori;
+    currentAcuity = acuity; // ★追加: 現在視力を保持
+
+    // SVG を生成
+    const size = Math.ceil(outerPX) + 8; // 少し余白
+    const cx = size/2, cy = size/2;
+    const outerR = outerPX/2;
+    const innerR = innerPX/2;
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', size);
+    svg.setAttribute('height', size);
+    svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+
+    // マスク: リング（外円 - 内円）から、矩形のギャップ（幅=ストローク）を引く
+    const defs = document.createElementNS(svg.namespaceURI, 'defs');
+    const mask = document.createElementNS(svg.namespaceURI, 'mask');
+    mask.setAttribute('id', 'ringMask');
+
+    const maskBG = document.createElementNS(svg.namespaceURI, 'rect');
+    maskBG.setAttribute('x', 0); maskBG.setAttribute('y', 0);
+    maskBG.setAttribute('width', size); maskBG.setAttribute('height', size);
+    maskBG.setAttribute('fill', 'white');
+
+    const innerCircle = document.createElementNS(svg.namespaceURI, 'circle');
+    innerCircle.setAttribute('cx', cx); innerCircle.setAttribute('cy', cy);
+    innerCircle.setAttribute('r', innerR);
+    innerCircle.setAttribute('fill', 'black');
+
+    const gap = document.createElementNS(svg.namespaceURI, 'rect');
+    const gapLen = outerPX/2 + 2; // = outerR + 2
+    const gapW = strokePX;        // 規格: ギャップ幅 = ストローク幅
+    gap.setAttribute('x', cx);
+    gap.setAttribute('y', cy - gapW/2);
+    gap.setAttribute('width', gapLen);
+    gap.setAttribute('height', gapW);
+    gap.setAttribute('fill', 'black');
+
+    const gapGroup = document.createElementNS(svg.namespaceURI, 'g');
+    gapGroup.setAttribute('transform', `rotate(${ori} ${cx} ${cy})`);
+    gapGroup.appendChild(gap);
+
+    mask.appendChild(maskBG);
+    mask.appendChild(innerCircle);
+    mask.appendChild(gapGroup);
+    defs.appendChild(mask);
+
+    const ring = document.createElementNS(svg.namespaceURI, 'circle');
+    ring.setAttribute('cx', cx); ring.setAttribute('cy', cy);
+    ring.setAttribute('r', outerR);
+
+    // === 変更: ランドル環の色をCSS変数で指定 ===
+    ring.setAttribute('style', 'fill: var(--landolt-color);');
+    ring.setAttribute('mask', 'url(#ringMask)');
+
+    svg.appendChild(defs);
+    svg.appendChild(ring);
+
+    // 置き換え
+    const help = board.querySelector('.board-hint');
+    if (judgeOverlay) judgeOverlay.classList.add('hidden');
+    board.replaceChildren(svg, judgeOverlay || document.createElement('div'), help);
+
+    // ステータス表示
+    nowAcuity.textContent = acuity.toFixed(2).replace(/\.00$/, '.0');
+    if (judgePill) judgePill.textContent = '—';
+    statDist.textContent = D.toFixed(1) + 'm';
+    statSize.textContent = `${outerMM.toFixed(2)} mm (≈ ${(outerPX).toFixed(1)} px)`;
+    statStroke.textContent = `${strokeMM.toFixed(2)} mm`;
+    statOri.textContent = `${ori}° ${degToArrowCW(ori)}`;
+  }
+
+  // ★変更: 「次の視力レベルへ進む」は正解時だけ
+  function advanceIfPossible() {
+    idx++;
+    if (idx >= sequence.length) {
+      finish();
+      return;
+    }
+    showLandolt(sequence[idx]);
+  }
+
+  function start() {
+    if (!pxPerMm) { alert('まずスケール校正を完了してください。'); return; }
+    sequence = buildSequence(Number(startAcuitySel.value));
+    if (sequence.length === 0) return;
+
+    running = true;
+    correctCount = 0; wrongCount = 0;
+    lastCorrectAcuity = null;
+    currentAcuity = null;
+    currentOri = null;
+
+    if (scoreOK) scoreOK.textContent = '0';
+    if (scoreNG) scoreNG.textContent = '0';
+    if (judgePill) judgePill.textContent = '—';
+    finalAcuity.textContent = '—';
+
+    // UI
+    startBtn.textContent = '再表示';
+    endBtn.disabled = false;
+
+    idx = 0;
+    showLandolt(sequence[idx]);
+  }
+
+  function finish() {
+    if (!running && lastCorrectAcuity == null) return;
+    running = false;
+
+    startBtn.textContent = '測定開始';
+    endBtn.disabled = true;
+
+    // ★変更: 最終結果は「最後に正解した視力」
+    if (lastCorrectAcuity != null) {
+      finalAcuity.textContent = lastCorrectAcuity.toFixed(2).replace(/\.00$/, '.0');
+      flash(finalAcuity);
+    } else {
+      finalAcuity.textContent = '—';
+      flash(finalAcuity);
+    }
+  }
+
+  function resetAll() {
+    running = false;
+    sequence = [];
+    idx = -1;
+
+    currentAcuity = null;
+    lastCorrectAcuity = null;
+    currentOri = null;
+
+    startBtn.textContent = '測定開始';
+    endBtn.disabled = true;
+
+    nowAcuity.textContent = '—';
+    finalAcuity.textContent = '—';
+    if (judgePill) judgePill.textContent = '—';
+
+    statSize.textContent = '—';
+    statStroke.textContent = '—';
+    statOri.textContent = '—';
+
+    if (scoreOK) scoreOK.textContent = '0';
+    if (scoreNG) scoreNG.textContent = '0';
+
+    // 画面から図形を消す
+    Array.from(board.querySelectorAll('svg')).forEach(el => el.remove());
+    if (judgeOverlay) judgeOverlay.classList.add('hidden');
+  }
+
+  // 小さな視覚効果
+  function flash(el) {
+    el.animate([
+      { filter: 'brightness(1.0)' }, { filter: 'brightness(1.8)' }, { filter: 'brightness(1.0)' }
+    ], { duration: 300, easing: 'ease-out' });
+  }
+
+  // 補助: CW度→矢印
+  function degToArrowCW(d){
+    const n=((d%360)+360)%360;
+    const m={0:'→',45:'↘',90:'↓',135:'↙',180:'←',225:'↖',270:'↑',315:'↗'};
+    return m[n]||'?';
+  }
+
+  // ===== 判定・サウンド =====
+  function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+  function playTone(freq, dur=0.13) {
+    if (!soundToggle || !soundToggle.checked) return;
+    initAudio();
+    const t = audioCtx.currentTime;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = 'sine'; o.frequency.value = freq;
+    o.connect(g); g.connect(audioCtx.destination);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.22, t+0.01);
+    g.gain.exponentialRampToValueAtTime(0.002, t+dur);
+    o.start(t); o.stop(t + dur + 0.02);
+  }
+  function sfxOK(){ playTone(880, 0.12); }
+  function sfxNG(){ playTone(220, 0.15); setTimeout(()=>playTone(180, 0.12), 140); }
+
+  function setJudgeUI(text, ok) {
+    if (judgePill) judgePill.textContent = text;
+    if (judgeOverlay) {
+      judgeOverlay.textContent = text;
+      judgeOverlay.classList.remove('hidden', 'correct', 'wrong');
+      judgeOverlay.classList.add(ok ? 'correct' : 'wrong');
+      setTimeout(() => judgeOverlay.classList.add('hidden'), 380);
+    }
+    flash(board);
+  }
+
+  // ★変更: 正解なら進む / 不正解なら同じ視力を維持して次問題（向き変更）
+  function answer(deg) {
+    if (!running || currentOri == null || currentAcuity == null) return;
+
+    const ok = (deg === currentOri);
+
+    if (ok) {
+      correctCount++;
+      if (scoreOK) scoreOK.textContent = String(correctCount);
+      sfxOK();
+      setJudgeUI('正解', true);
+
+      // ★最後に正解した視力を更新
+      lastCorrectAcuity = currentAcuity;
+
+      // ★正解時のみ次レベルへ
+      setTimeout(() => { if (running) advanceIfPossible(); }, 450);
+
+    } else {
+      wrongCount++;
+      if (scoreNG) scoreNG.textContent = String(wrongCount);
+      sfxNG();
+      setJudgeUI('不正解', false);
+
+      // ★不正解時: 視力レベルは上げない（同じ視力で出し直し）
+      setTimeout(() => {
+        if (!running) return;
+        showLandolt(currentAcuity); // 同一視力で向きだけ変える
+      }, 450);
+    }
+  }
+
+  // 矢印ボタン
+  arrowBtns.forEach(btn => btn.addEventListener('click', () => {
+    if (!running) return;
+    const d = Number(btn.dataset.deg);
+    if (!Number.isFinite(d)) return;
+    answer(d);
+  }));
+
+  // キーボード（矢印 & テンキー）
+  const keyMap = {
+    ArrowRight:0, ArrowUp:270, ArrowLeft:180, ArrowDown:90,
+    Numpad1:135, Numpad2:90, Numpad3:45, Numpad4:180, Numpad6:0, Numpad7:225, Numpad8:270, Numpad9:315
+  };
+  window.addEventListener('keydown', (e) => {
+    if (!running) return;
+    const d = keyMap[e.code];
+    if (d != null) { e.preventDefault(); answer(d); }
+  });
+
+  // ===== イベント配線 =====
+  populateStartOptions();
+
+  // ★変更: 測定中の startBtn は「再表示」（視力レベルを上げない）
+  startBtn.addEventListener('click', () => {
+    if (!running) {
+      start();
+    } else {
+      // 再表示（同じ視力で向きを変えて再出題）
+      if (currentAcuity != null) showLandolt(currentAcuity);
+    }
+  });
+
+  endBtn.addEventListener('click', finish);
+  resetBtn.addEventListener('click', resetAll);
+  board.addEventListener('click', (e) => { e.preventDefault(); /* 回答は矢印ボタン/キーで */ });
+
+})();
+</script>
+</body>
+</html>

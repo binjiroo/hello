@@ -1,0 +1,170 @@
+[0603/125303.939:INFO:cefpython_app.cpp(199)] [Browser process] OnBeforeChildProcessLaunch() command line: "C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3\subprocess" --type=gpu-process --no-sandbox --locales-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3\locales" --log-file=debug.log --log-severity=info --resources-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3" --lang=en-US --disable-gpu-shader-disk-cache /prefetch:2
+
+[0603/125303.942:INFO:cef_log.cpp(8)] [Browser process] Switch already set, ignoring: disable-gpu-shader-disk-cache
+
+[0603/125303.942:INFO:cefpython_app.cpp(199)] [Browser process] OnBeforeChildProcessLaunch() command line: "C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3\subprocess" --type=gpu-process --no-sandbox --locales-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3\locales" --log-file=debug.log --log-severity=info --resources-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3" --lang=en-US --disable-gpu-shader-disk-cache --gpu-preferences=KAAAAAAAAACAA4CAAQAAAAAAAAAAAGAAEAAAAAAAAAAAAAAAAAAAACgAAAAEAAAAIAAAAAAAAAAoAAAAAAAAADAAAAAAAAAAOAAAAAAAAAAQAAAAAAAAAAAAAAAKAAAAEAAAAAAAAAAAAAAACwAAABAAAAAAAAAAAQAAAAoAAAAQAAAAAAAAAAEAAAALAAAA --locales-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3\locales" --log-file=debug.log --log-severity=info --resources-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3" --lang=en-US /prefetch:2
+
+[0603/125303.993:INFO:cef_log.cpp(8)] [Browser process] CreateBrowserSync() called
+
+[0603/125303.993:INFO:cef_log.cpp(8)] [Browser process] CefBrowser::CreateBrowserSync()
+
+[0603/125304.023:INFO:cef_log.cpp(8)] [Browser process] GetPyBrowser(): create new PyBrowser, browserId=1
+
+[0603/125304.025:INFO:cefpython_app.cpp(199)] [Browser process] OnBeforeChildProcessLaunch() command line: "C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3\subprocess" --type=renderer --no-sandbox --service-pipe-token=E71E4D9F26A59E6812A33B7506ADEF3E --lang=en-US --locales-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3\locales" --log-file=debug.log --log-severity=info --resources-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3" --disable-gpu-shader-disk-cache /prefetch:1
+
+[0603/125304.035:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/125304.036:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/125304.037:INFO:cef_log.cpp(8)] [Browser process] CefBrowser::CreateBrowserSync() succeeded
+
+[0603/125304.037:INFO:cef_log.cpp(8)] [Browser process] CefBrowser window handle = 75837310
+
+[0603/125304.037:ERROR:cef_log.cpp(16)] [Browser process] SetBounds() not implemented on this platform
+
+[0603/125304.038:ERROR:cef_log.cpp(16)] [Browser process] SetBounds() not implemented on this platform
+
+[0603/125304.041:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/125305.320:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/125305.321:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/125305.321:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/125305.322:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/130042.361:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/130042.362:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/130044.904:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/130045.563:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/130046.182:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/130046.762:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/130047.407:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/130122.902:INFO:cef_log.cpp(8)] [Browser process] CefBrowser::CloseBrowser(False)
+
+[0603/130122.903:INFO:cef_log.cpp(8)] [Browser process] Shutdown()
+
+[0603/130122.954:WARNING:angle_platform_impl.cc(59)] compileToBinary(228): 
+C:\fakepath(46,8-58): warning X3571: pow(f, e) will not work for negative f, use abs(f) or conditionally handle negative values if you expect them
+C:\fakepath(50,9-44): warning X3571: pow(f, e) will not work for negative f, use abs(f) or conditionally handle negative values if you expect them
+
+[0603/130122.964:WARNING:angle_platform_impl.cc(59)] compileToBinary(228): 
+C:\fakepath(29,8-58): warning X3571: pow(f, e) will not work for negative f, use abs(f) or conditionally handle negative values if you expect them
+C:\fakepath(33,9-44): warning X3571: pow(f, e) will not work for negative f, use abs(f) or conditionally handle negative values if you expect them
+
+[0603/130123.146:INFO:cef_log.cpp(8)] [Browser process] del g_pyBrowsers[1]
+
+[0603/130123.147:INFO:cef_log.cpp(8)] [Browser process] CefShutdown()
+
+[0603/130123.147:INFO:cef_log.cpp(8)] [Browser process] LifespanHandler_OnBeforeClose
+
+[0603/130123.147:INFO:cef_log.cpp(8)] [Browser process] OnBeforeClose: Browser was already globally unreferenced, a new incomplete instance is created, browser id=1
+
+[0603/130123.147:INFO:cef_log.cpp(8)] [Browser process] RemovePyBrowser() FAILED: browser not found, id = 1
+
+[0603/130123.168:INFO:cef_log.cpp(8)] [Browser process] Shutdown()
+
+[0603/130123.213:INFO:cefpython_app.cpp(263)] [Renderer process] OnBrowserDestroyed()
+
+[0603/130123.388:INFO:cef_log.cpp(8)] [Browser process] CefShutdown()
+
+[0603/130137.174:INFO:cefpython_app.cpp(199)] [Browser process] OnBeforeChildProcessLaunch() command line: "C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3\subprocess" --type=gpu-process --no-sandbox --locales-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3\locales" --log-file=debug.log --log-severity=info --resources-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3" --lang=en-US --disable-gpu-shader-disk-cache /prefetch:2
+
+[0603/130137.186:INFO:cef_log.cpp(8)] [Browser process] Switch already set, ignoring: disable-gpu-shader-disk-cache
+
+[0603/130137.187:INFO:cefpython_app.cpp(199)] [Browser process] OnBeforeChildProcessLaunch() command line: "C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3\subprocess" --type=gpu-process --no-sandbox --locales-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3\locales" --log-file=debug.log --log-severity=info --resources-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3" --lang=en-US --disable-gpu-shader-disk-cache --gpu-preferences=KAAAAAAAAACAA4CAAQAAAAAAAAAAAGAAEAAAAAAAAAAAAAAAAAAAACgAAAAEAAAAIAAAAAAAAAAoAAAAAAAAADAAAAAAAAAAOAAAAAAAAAAQAAAAAAAAAAAAAAAKAAAAEAAAAAAAAAAAAAAACwAAABAAAAAAAAAAAQAAAAoAAAAQAAAAAAAAAAEAAAALAAAA --locales-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3\locales" --log-file=debug.log --log-severity=info --resources-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3" --lang=en-US /prefetch:2
+
+[0603/130137.221:INFO:cef_log.cpp(8)] [Browser process] CreateBrowserSync() called
+
+[0603/130137.221:INFO:cef_log.cpp(8)] [Browser process] CefBrowser::CreateBrowserSync()
+
+[0603/130137.241:INFO:cef_log.cpp(8)] [Browser process] GetPyBrowser(): create new PyBrowser, browserId=1
+
+[0603/130137.258:INFO:cefpython_app.cpp(199)] [Browser process] OnBeforeChildProcessLaunch() command line: "C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3\subprocess" --type=renderer --no-sandbox --service-pipe-token=0194FEA40E792C978E37A09B52DC44C1 --lang=en-US --locales-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3\locales" --log-file=debug.log --log-severity=info --resources-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3" --disable-gpu-shader-disk-cache /prefetch:1
+
+[0603/130137.269:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/130137.271:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/130137.271:INFO:cef_log.cpp(8)] [Browser process] CefBrowser::CreateBrowserSync() succeeded
+
+[0603/130137.272:INFO:cef_log.cpp(8)] [Browser process] CefBrowser window handle = 45692780
+
+[0603/130137.272:ERROR:cef_log.cpp(16)] [Browser process] SetBounds() not implemented on this platform
+
+[0603/130137.272:ERROR:cef_log.cpp(16)] [Browser process] SetBounds() not implemented on this platform
+
+[0603/130137.276:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/130138.597:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/130138.598:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/130138.598:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/130138.599:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/130201.776:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/130201.776:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/130226.132:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/130227.195:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/130255.537:INFO:cefpython_app.cpp(199)] [Browser process] OnBeforeChildProcessLaunch() command line: "C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3\subprocess" --type=gpu-process --no-sandbox --locales-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3\locales" --log-file=debug.log --log-severity=info --resources-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3" --lang=en-US --disable-gpu-shader-disk-cache /prefetch:2
+
+[0603/130255.538:INFO:cef_log.cpp(8)] [Browser process] Switch already set, ignoring: disable-gpu-shader-disk-cache
+
+[0603/130255.538:INFO:cefpython_app.cpp(199)] [Browser process] OnBeforeChildProcessLaunch() command line: "C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3\subprocess" --type=gpu-process --no-sandbox --locales-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3\locales" --log-file=debug.log --log-severity=info --resources-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3" --lang=en-US --disable-gpu-shader-disk-cache --gpu-preferences=KAAAAAAAAACAA4CAAQAAAAAAAAAAAGAAEAAAAAAAAAAAAAAAAAAAACgAAAAEAAAAIAAAAAAAAAAoAAAAAAAAADAAAAAAAAAAOAAAAAAAAAAQAAAAAAAAAAAAAAAKAAAAEAAAAAAAAAAAAAAACwAAABAAAAAAAAAAAQAAAAoAAAAQAAAAAAAAAAEAAAALAAAA --locales-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3\locales" --log-file=debug.log --log-severity=info --resources-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3" --lang=en-US /prefetch:2
+
+[0603/130255.578:INFO:cef_log.cpp(8)] [Browser process] CreateBrowserSync() called
+
+[0603/130255.579:INFO:cef_log.cpp(8)] [Browser process] CefBrowser::CreateBrowserSync()
+
+[0603/130255.596:INFO:cef_log.cpp(8)] [Browser process] GetPyBrowser(): create new PyBrowser, browserId=1
+
+[0603/130255.601:INFO:cefpython_app.cpp(199)] [Browser process] OnBeforeChildProcessLaunch() command line: "C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3\subprocess" --type=renderer --no-sandbox --service-pipe-token=E1BB244DFB6503D66287390F35F08A7A --lang=en-US --locales-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3\locales" --log-file=debug.log --log-severity=info --resources-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3" --disable-gpu-shader-disk-cache /prefetch:1
+
+[0603/130255.614:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/130255.614:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/130255.615:INFO:cef_log.cpp(8)] [Browser process] CefBrowser::CreateBrowserSync() succeeded
+
+[0603/130255.615:INFO:cef_log.cpp(8)] [Browser process] CefBrowser window handle = 13174086
+
+[0603/130255.615:ERROR:cef_log.cpp(16)] [Browser process] SetBounds() not implemented on this platform
+
+[0603/130255.616:ERROR:cef_log.cpp(16)] [Browser process] SetBounds() not implemented on this platform
+
+[0603/130255.620:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/130256.885:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/130256.887:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/130256.888:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/130256.890:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/130301.732:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/130301.733:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/130335.222:INFO:cef_log.cpp(8)] [Browser process] GetPyFrame(): underlying frame does not yet exist: browserId = 1, frameId = -4
+
+[0603/132624.778:INFO:cefpython_app.cpp(199)] [Browser process] OnBeforeChildProcessLaunch() command line: "C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3\subprocess" --type=gpu-process --no-sandbox --locales-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3\locales" --log-file=debug.log --log-severity=info --resources-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3" --lang=en-US --disable-gpu-shader-disk-cache /prefetch:2
+
+[0603/132624.780:INFO:cef_log.cpp(8)] [Browser process] Switch already set, ignoring: disable-gpu-shader-disk-cache
+
+[0603/132624.783:INFO:cefpython_app.cpp(199)] [Browser process] OnBeforeChildProcessLaunch() command line: "C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3\subprocess" --type=gpu-process --no-sandbox --locales-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3\locales" --log-file=debug.log --log-severity=info --resources-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3" --lang=en-US --disable-gpu-shader-disk-cache --gpu-preferences=KAAAAAAAAACAA4CAAQAAAAAAAAAAAGAAEAAAAAAAAAAAAAAAAAAAACgAAAAEAAAAIAAAAAAAAAAoAAAAAAAAADAAAAAAAAAAOAAAAAAAAAAQAAAAAAAAAAAAAAAKAAAAEAAAAAAAAAAAAAAACwAAABAAAAAAAAAAAQAAAAoAAAAQAAAAAAAAAAEAAAALAAAA --locales-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3\locales" --log-file=debug.log --log-severity=info --resources-dir-path="C:\Users\kokada\projectpython\myenv\Lib\site-packages\cefpython3" --lang=en-US /prefetch:2
+

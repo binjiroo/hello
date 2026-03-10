@@ -1,0 +1,359 @@
+<!-- my_flask_app/templates/gusset_type/index.html -->
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Gusset Type 計算フォーム</title>
+    <style>
+        textarea {
+            height: 200px;
+        }
+
+        button {
+            margin-top: 12px;
+            font-size: 16pt;
+        }
+
+        body {
+            display: flex;
+            justify-content: space-between;
+            /* 左右に分ける */
+            gap: 20px;
+            padding: 20px;
+        }
+
+        h1 {
+            outline-color: rgb(255, 105, 30);
+            outline-width: medium;
+            outline-style: dashed;
+        }
+
+        label {
+            background-color: rgb(200, 200, 255);
+            font-size: 14pt;
+            padding: 2px;
+            margin: 0px;
+        }
+
+        input,
+        select,
+        textarea,
+        button {
+            font-size: 14pt;
+            padding: 2px;
+            margin: 0px;
+        }
+
+        pre {
+            font-size: 16pt;
+            padding: 2px;
+            margin: 0px;
+        }
+
+		.actions button {
+			margin-right: 8px;
+		}
+
+        .left-column {
+            width: 60%;
+            /* 左側のカラムの幅 */
+        }
+
+        .right-column {
+            width: 35%;
+            /* 右側のカラムの幅 */
+            background-color: #f9f9f9;
+            padding: 20px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="left-column">
+        <h1>Gusset Type 計算フォーム</h1>
+        <form method="post">
+            <label>親H型鋼サイズ</label><br>
+            <select name="steel_name" required>
+                <option value="">--選択してください--</option>
+                {% for name in steel_sizes %}
+                <option value="{{ name }}" {% if defaults.steel_name==name %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label>子H型鋼サイズ</label><br>
+            <select name="sub_steel_name" required>
+                <option value="">--選択してください--</option>
+                {% for name in steel_sizes %}
+                <option value="{{ name }}" {% if defaults.sub_steel_name==name %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label>制御コード1</label><br>
+            <input type="text" name="s1" value="{{ defaults.s1 }}"><br><br>
+
+            <label>制御コード2</label><br>
+            <input type="text" name="s2" value="{{ defaults.s2 }}"><br><br>
+
+            <label>部材数 (b_set)</label><br>
+            <input type="number" name="b_set" value="{{ defaults.b_set }}"><br><br>
+
+            <label>高さ指定 (y_set)</label><br>
+            <input type="number" name="y_set" value="{{ defaults.y_set }}"><br><br>
+
+            <!-- ★ 追加: 高さ水平処理の許容範囲 -->
+            <label>高さ水平処理許容範囲 (|y_set|≦)</label><br>
+            <input type="number" name="yset_limit" value="{{ defaults.yset_limit }}"><br><br>
+
+            <label>基準点</label><br>
+            <select name="offset_choice">
+                {% for i in range(1,10) %}
+                <!-- offset_choice / mode など数値→文字列比較はこれでOK -->
+                <option value="{{ i }}" {% if defaults.offset_choice == (i ~ '') %}selected{% endif %}>{{ i }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="t">板厚(t)</label><br>
+            <select name="t" id="t">
+            {% for val in ["1.6", "2.3", "3.2", "4.5", "6", "9", "12", "16", "19", "24", "27"] %}
+                <option value="{{ val }}" {% if defaults.t == val %}selected{% endif %}>{{ val }}</option>
+            {% endfor %}
+            </select><br><br>
+
+            <label for="hole_column_x">列孔数</label><br>
+            <select name="hole_column_x" id="hole_column_x">
+            {% for val in ["1", "2", "3", "4", "5"] %}
+                <option value="{{ val }}" {% if defaults.hole_column_x == val %}selected{% endif %}>{{ val }}</option>
+            {% endfor %}
+            </select><br><br>
+
+            <label for="hole_row_y">行孔数</label><br>
+            <select name="hole_row_y" id="hole_row_y">
+            {% for val in ["1", "2", "3", "4", "5"] %}
+                <option value="{{ val }}" {% if defaults.hole_row_y == val %}selected{% endif %}>{{ val }}</option>
+            {% endfor %}
+            </select><br><br>
+
+            <label for="hole_pitch">列孔ピッチ</label><br>
+            <select name="hole_pitch" id="hole_pitch">
+            {% for val in ["15","30","45","50","60","75","90","100","120","150","175","200"] %}
+                <option value="{{ val }}" {% if defaults.hole_pitch == val %}selected{% endif %}>{{ val }}</option>
+            {% endfor %}
+            </select>
+            <br><br>
+
+            <label for="row_hole_pitch">行孔ピッチ</label><br>
+            <select name="row_hole_pitch" id="row_hole_pitch">
+            {% for val in ["15","30","45","50","60","75","90","100","120","150","175","200"] %}
+                <option value="{{ val }}" {% if defaults.row_hole_pitch == val %}selected{% endif %}>{{ val }}</option>
+            {% endfor %}
+            </select>
+            <br><br>
+
+            <label for="clearance">クリアランス</label><br>
+            <select name="clearance" id="clearance">
+            {% for val in ["0","5","10","15","20"] %}
+                <option value="{{ val }}" {% if defaults.clearance == val %}selected{% endif %}>{{ val }}</option>
+            {% endfor %}
+            </select>
+            <br><br>
+
+            <label for="end_hole_pitch">終端孔ピッチ</label><br>
+            <select name="end_hole_pitch" id="end_hole_pitch">
+            {% for val in ["20","30","40","50","60","75","90","100","120","150","175","200"] %}
+                <option value="{{ val }}" {% if defaults.end_hole_pitch == val %}selected{% endif %}>{{ val }}</option>
+            {% endfor %}
+            </select>
+            <br><br>
+
+            <label for="hole_size">孔径</label><br>
+            <select name="hole_size" id="hole_size">
+            {% for val in ["","9","12","15","18","22","24","26","30","33"] %}
+                <option value="{{ val }}" {% if defaults.hole_size == val %}selected{% endif %}>{{ val }}</option>
+            {% endfor %}
+            </select>
+            <br><br>
+
+            <label for="lc">線色:</label>
+            <select name="lc" id="lc">
+                {% for val in ["1", "2", "3", "4", "5", "6"] %}
+                <option value="{{val}}" {% if defaults.lc==val %}selected{% endif %}>{{val}}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="lt">線種:</label>
+            <select name="lt" id="lt">
+                {% for val in ["1", "2", "3", "4", "5", "6", "7", "8", "9"] %}
+                <option value="{{val}}" {% if defaults.lt==val %}selected{% endif %}>{{val}}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="ly">レイヤー:</label>
+            <select name="ly" id="ly">
+                {% for val in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "-11"] %}
+                <option value="{{val}}" {% if defaults.ly==val %}selected{% endif %}>{{val}}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label>モード</label><br>
+            <select name="mode">
+                {% for i in range(1,3) %}
+                <option value="{{ i }}" {% if defaults.mode == (i ~ '') %}selected{% endif %}>{{ i }}</option>
+
+                {% endfor %}
+            </select><br><br>
+
+			<div class="actions">
+				<button type="submit" name="action" value="new">新規計算</button>
+				<button type="submit" name="action" value="append">追加計算</button>
+				<button type="submit" name="action" value="clear">クリア</button>
+			</div>
+        </form>
+
+        {% if error_message %}
+        <p style="color:red;">{{ error_message }}</p>
+        {% endif %}
+
+        <!-- 結果表示部分 -->
+        {% if result_str %}
+        <h1>計算結果</h1>
+        <pre id="resultDisplay">{{ result_str }}</pre>
+        <button type="button" onclick="copyResult()">結果をコピー</button>
+        {% endif %}
+
+
+        <p><a href="{{ url_for('home') }}">← ホームに戻る</a></p>
+
+        <label for="saveFilename">保存ファイル名：</label>
+        <select name="saveFilename" id="saveFilename">
+            {% for fname in filenames %}
+            <option value="{{ fname }}">{{ fname }}</option>
+            {% endfor %}
+        </select><br><br>
+        <button type="button" id="pickDirBtn">保存先フォルダを選択</button>
+        <button type="button" id="saveInDirBtn" disabled>ディレクトリに保存</button>
+
+        <script>
+        function copyResult() {
+            const el = document.getElementById('resultDisplay') || document.getElementById('resultText');
+            if (!el) { alert('結果がありません'); return; }
+            const text = el.tagName === 'TEXTAREA' ? el.value : el.innerText;
+            (navigator.clipboard?.writeText?.(text) || Promise.reject())
+            .then(() => alert('コピーしました'))
+            .catch(() => {
+                // フォールバック（選択→execCommand）
+                const tmp = document.createElement('textarea');
+                tmp.value = text;
+                document.body.appendChild(tmp);
+                tmp.select();
+                try {
+                document.execCommand('copy');
+                alert('コピーしました');
+                } catch {
+                alert('コピーに失敗しました');
+                } finally {
+                document.body.removeChild(tmp);
+                }
+            });
+        }
+        </script>
+
+        <!-- index.html の <head> 内  または <body> タグ直下 -->
+        <script type="module">
+        import { set, get } from 'https://unpkg.com/idb-keyval@6.2.0?module';
+
+        const DIR_KEY = 'gusset-save-dir';
+        async function saveDirHandle(handle) { await set(DIR_KEY, handle) }
+        async function loadDirHandle() { return await get(DIR_KEY) }
+
+        window.initializeGussetSave = () => {
+            const pickBtn = document.getElementById('pickDirBtn');
+            const saveBtn = document.getElementById('saveInDirBtn');
+            const fnameEl = document.getElementById('saveFilename');
+
+            // ★ 結果要素は両対応で取得（resultDisplay優先）
+            const getResultText = () => {
+            const el = document.getElementById('resultDisplay') || document.getElementById('resultText');
+            if (!el) return '';
+            return el.tagName === 'TEXTAREA' ? el.value : el.innerText;
+            };
+
+            pickBtn?.addEventListener('click', async () => {
+            try {
+                const dirHandle = await window.showDirectoryPicker();
+                await saveDirHandle(dirHandle);
+                if (saveBtn) saveBtn.disabled = false;
+                alert(`保存先フォルダを 「${dirHandle.name}」 に設定しました`);
+            } catch {
+                alert('フォルダ選択をキャンセルしました');
+            }
+            });
+
+            saveBtn?.addEventListener('click', async () => {
+            const dirHandle = await loadDirHandle();
+            if (!dirHandle) { alert('まず「フォルダを選択」してください'); return; }
+
+            const text = getResultText();
+            if (!text) { alert('保存する結果がありません'); return; }
+
+            try {
+                const filename = fnameEl?.value || 'JW_OPT4.DAT';
+                const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+                const writable = await fileHandle.createWritable();
+                await writable.write(text);
+                await writable.close();
+                alert(`"${filename}" を ${dirHandle.name} フォルダに保存しました`);
+            } catch {
+                alert('保存に失敗しました');
+            }
+            });
+        };
+        </script>
+
+        <!-- <body> の最後のほうに置いてください -->
+        <script>
+            window.addEventListener('DOMContentLoaded', () => {
+                if (window.initializeGussetSave) {
+                    window.initializeGussetSave();
+                } else {
+                    console.error('initializeGussetSave が定義されていません');
+                }
+            });
+        </script>
+    </div>
+    <div class="right-column">
+        <h1>H型鋼ガセットプレート用線記号変形テキスト制作アプリ</h1>
+        <h2>説明</h2>
+        <p>このアプリは、H型鋼のサイズに基づいて座標計算を行い、ガセットプレートの型と指定のピッチで孔を作図する線記号変形のテキストを作成します。</p>
+        <p>ユーザーはH型鋼のサイズや孔のサイズやピッチ、その他のパラメータを指定し、H型鋼用のガセットプレートを作図する線記号変形のテキストを作成を実行します。</p>
+        <p>各値設定プルダウンの詳細説明を以下に示します:</p>
+        <ul>
+            <li><strong>親H型鋼のサイズ:</strong> 親H型鋼のサイズを選択してください。</li>
+            <li><strong>子H型鋼のサイズ:</strong> 子H型鋼のサイズを選択してください。</li>
+            <li><strong>制御コード1:</strong> JW-CADの線記号変形の仕様に準拠した制御コード1の値を入力します。</li>
+            <li><strong>制御コード2:</strong> JW-CADの線記号変形の仕様に準拠した制御コード2の値を入力します。</li>
+            <li><strong>部材数:</strong> ファイル内に追加できる線記号変形の最大数を指定します。設定数以上を追加してもそれ以降はリストに表示されません。(1～30)</li>
+            <li><strong>高さ指定:</strong> 親H型鋼のフランジ上端を基準に、子H型鋼のフランジ上端の高さを指定します。</li>
+            <li><strong>高さ水平処理許容範囲:</strong> 指定した高さ差(y_set)の絶対値がこの範囲内であれば、ガセット上側を水平線処理（y_last+40 基準）とし、それ以上離れている場合はガセットまたは子梁側へ斜めに逃がす処理を行います。現場や会社ごとの裁量で0～±nの範囲を指定してください。</li>
+            <li><strong>基準点:</strong> 作図の基準点を指定します。1=左上 2=上 3=右上 4=左 5=中 6=右 7=左下 8=下 9=右下(親H型鋼の断面9点が基準点になります)</li>
+            <li><strong>板厚:</strong> ガセットプレートの板厚を指定します。(設定しても作図に影響はありません)</li>
+            <li><strong>孔の列数:</strong> 作図する孔の列数を指定します。(x座標に対する孔数を指定)</li>
+            <li><strong>孔の行数:</strong> 作図する孔の行数を指定します。(y座標に対する孔数を指定)</li>
+            <li><strong>列の孔ピッチ:</strong> 作図する列の孔ピッチを指定します。(孔の列数の孔ピッチを指定)</li>
+            <li><strong>行の孔ピッチ:</strong> 作図する行の孔ピッチを指定します。(孔の行数の孔ピッチを指定)</li>
+            <li><strong>終端孔ピッチ:</strong> 親H型鋼のフランジ端からの孔ピッチを指定します。</li>
+            <li><strong>孔径:</strong> ガセットプレートの孔径を指定します。</li>
+            <li><strong>線色:</strong> 1～6の範囲で値を指定します。線色はJW-CADの線色設定に依存します。</li>
+            <li><strong>線種:</strong> 1～9の範囲で値を指定します。線種はJW-CADの線種設定に依存します。</li>
+            <li><strong>レイヤー:</strong> 0～9,またはA～Fの範囲で値を指定します。描画レイヤーはJW-CADのレイヤー設定に依存します。</li>
+            <li><strong>モード:</strong>
+                ガセットプレートの形状をモードで指定します。モード1=ガセットをカット、モード2=子H型鋼をカット、モード3=上下いずれかでガセットをカット、その逆は子H型鋼をカット</li>
+
+        </ul>
+        <h3>使用方法</h3>
+        <p>適切なオプションを選択し、「計算」ボタンをクリックして、結果を得てください。</p>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,62 @@
+[
+    {
+        "transaction_type": "支払",
+        "partner": "真一",
+        "amount": "¥10,000",
+        "date": "12/31"
+    },
+    {
+        "transaction_type": "支払",
+        "partner": "静岡日産",
+        "amount": "¥25,000",
+        "date": "112/31"
+    },
+    {
+        "transaction_type": "支払",
+        "partner": "スマホ料金",
+        "amount": "¥18,000",
+        "date": "12/31"
+    },
+    {
+        "transaction_type": "支払",
+        "partner": "スマホ代行",
+        "amount": "¥10,000",
+        "date": "12/31"
+    },
+    {
+        "transaction_type": "支払",
+        "partner": "税金",
+        "amount": "¥10,000",
+        "date": "12/31"
+    },
+    {
+        "transaction_type": "支払",
+        "partner": "モビット",
+        "amount": "¥47,000",
+        "date": "12/31"
+    },
+    {
+        "transaction_type": "支払",
+        "partner": "富士宮市立病院",
+        "amount": "¥3,500",
+        "date": "12/31"
+    },
+    {
+        "transaction_type": "支払",
+        "partner": "脳科学病院",
+        "amount": "¥50,000",
+        "date": "12/31"
+    },
+    {
+        "transaction_type": "支払",
+        "partner": "畑かん",
+        "amount": "¥6,000",
+        "date": "12/31"
+    },
+    {
+        "transaction_type": "支払",
+        "partner": "共済",
+        "amount": "¥6,000",
+        "date": "12/31"
+    }
+]

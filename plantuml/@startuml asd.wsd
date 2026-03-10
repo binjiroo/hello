@@ -1,0 +1,8 @@
+@startuml asd
+class Person {
+    - name: string
+    + getName(): string
+    + setName(name: string): void
+}
+@enduml
+@startuml asd.puml@startuml asd.puml
