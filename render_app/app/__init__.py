@@ -2,6 +2,11 @@
 
 from flask import Flask, render_template
 
+PAGE_LABELS = {
+    "angle_size": "山形鋼",
+    "h_size": "H形鋼",
+}
+
 
 def _register_blueprints(app: Flask) -> None:
     from importlib import import_module
@@ -32,7 +37,8 @@ def create_app() -> Flask:
         for name, bp in app.blueprints.items():
             if not bp.url_prefix:
                 continue
-            pages.append((name, f"{bp.url_prefix.rstrip('/')}/"))
+            label = PAGE_LABELS.get(name, name)
+            pages.append((label, f"{bp.url_prefix.rstrip('/')}/"))
         pages.sort(key=lambda item: item[0])
         return render_template("home.html", pages=pages)
 
