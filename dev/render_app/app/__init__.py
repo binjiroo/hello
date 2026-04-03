@@ -8,6 +8,7 @@ PAGE_LABELS = {
     "chs_size": "丸パイプ",
     "column_size": "コラム断面",
     "h_size": "H形鋼",
+    "lipcannel_size": "リップ溝形鋼",
 }
 
 logger = logging.getLogger(__name__)
