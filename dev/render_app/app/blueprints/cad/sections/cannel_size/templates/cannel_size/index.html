@@ -1,0 +1,278 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>溝形鋼 断面図テキスト生成</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        h1 {
+            outline-color: rgb(255, 105, 30);
+            outline-width: medium;
+            outline-style: dashed;
+        }
+
+        label {
+            background-color: rgb(200, 200, 255);
+            font-size: 14pt;
+            padding: 2px;
+            margin: 0;
+        }
+
+        input,
+        select,
+        button {
+            font-size: 14pt;
+            padding: 2px;
+            margin: 0;
+        }
+
+        pre {
+            font-size: 20pt;
+            padding: 2px;
+            margin: 0;
+        }
+
+        .left-column {
+            width: 60%;
+        }
+
+        .right-column {
+            width: 35%;
+            background-color: #f9f9f9;
+            padding: 20px;
+            border: 1px solid #ccc;
+        }
+
+        .back-home {
+            display: inline-block;
+            padding: 8px 12px;
+            background-color: #f0f0f0;
+            color: #333;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14pt;
+        }
+
+        .back-home:hover {
+            background-color: #e0e0e0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="left-column">
+        <h1>溝形鋼 断面図テキスト生成アプリ</h1>
+
+        <form method="post">
+            <label for="steel_name">溝形鋼 サイズ</label><br>
+            <select name="steel_name" id="steel_name" required>
+                {% for size in steel_sizes %}
+                <option value="{{ size }}" {% if defaults.steel_name==size %}selected{% endif %}>{{ size }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            {% if error_message %}
+            <p style="color:red;">{{ error_message }}</p>
+            {% endif %}
+
+            <label for="s1">線色コード</label><br>
+            <select name="s1" id="s1">
+                {% for val in ["10", "20", "01", "02", "03", "04", "05", "06", "07"] %}
+                <option value="{{ val }}" {% if defaults.s1==val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="s2">線種コード</label><br>
+            <select name="s2" id="s2">
+                {% for val in ["10", "20", "01", "02", "03", "04", "05", "06", "07"] %}
+                <option value="{{ val }}" {% if defaults.s2==val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="offset_choice">配置位置</label><br>
+            <select name="offset_choice" id="offset_choice">
+                {% for val in ["1", "2", "3", "4", "5", "6", "7", "8", "9"] %}
+                <option value="{{ val }}" {% if defaults.offset_choice==val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="lc">線色</label>
+            <select name="lc" id="lc">
+                {% for val in ["1", "2", "3", "4", "5", "6"] %}
+                <option value="{{ val }}" {% if defaults.lc==val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="lt">線種</label>
+            <select name="lt" id="lt">
+                {% for val in ["1", "2", "3", "4", "5", "6", "7", "8", "9"] %}
+                <option value="{{ val }}" {% if defaults.lt==val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="ly">レイヤー</label>
+            <select name="ly" id="ly">
+                {% for val in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "-11"] %}
+                <option value="{{ val }}" {% if defaults.ly==val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="members">部材数</label>
+            <select name="members" id="members">
+                {% for val in ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16",
+                "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30"] %}
+                <option value="{{ val }}" {% if defaults.members==val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="separator">区切り記号</label>
+            <select name="separator" id="separator">
+                {% for val in ["999", "998", "997", "996", "995", "994", "993", "992", "991", "990"] %}
+                <option value="{{ val }}" {% if defaults.separator==val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="scale">尺度</label>
+            <select name="scale" id="scale">
+                {% for val in ["", "0", "0.5", "1", "1.5", "2", "2.5", "3", "3.5", "4", "4.5", "5", "5.5", "6", "6.5",
+                "7", "7.5", "8", "8.5", "9", "9.5", "10"] %}
+                <option value="{{ val }}" {% if defaults.scale==val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="actual_size">実寸</label>
+            <select name="actual_size" id="actual_size">
+                {% for val in ["", "100", "200", "300", "700", "750", "751", "760", "761", "762", "763", "764", "765",
+                "767", "768", "800", "10000", "11400", "12930"] %}
+                <option value="{{ val }}" {% if defaults.actual_size==val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="command">コマンド番号</label>
+            <select name="command" id="command">
+                {% for val in ["1", "2", "3", "4", "5"] %}
+                <option value="{{ val }}" {% if defaults.command==val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <textarea name="prev_result" style="display:none;">{{ result_str }}</textarea>
+
+            <button type="submit" name="action" value="new">新規生成</button>
+            <button type="submit" name="action" value="append">追加入力</button>
+            <button type="submit" name="action" value="clear">クリア</button>
+        </form>
+
+        <p><a href="{{ url_for('home') }}" class="back-home">ホームに戻る</a></p>
+
+        <label for="saveFilename">保存ファイル名</label>
+        <select name="saveFilename" id="saveFilename">
+            {% for fname in filenames %}
+            <option value="{{ fname }}">{{ fname }}</option>
+            {% endfor %}
+        </select><br><br>
+        <button type="button" id="pickDirBtn">保存フォルダを選択</button>
+        <button type="button" id="saveInDirBtn" disabled>ディレクトリに保存</button>
+
+        {% if result_str %}
+        <h1>出力結果</h1>
+        <pre id="resultDisplay"
+            style="white-space: pre-wrap; border:1px solid #ccc; padding:10px; max-height:600px; overflow:auto;">{{ result_str | safe }}</pre>
+        <br>
+        <button onclick="copyResult()">結果をコピー</button>
+        {% endif %}
+    </div>
+
+    <div class="right-column">
+        <h1>溝形鋼断面図テキスト生成アプリ</h1>
+        <h2>説明</h2>
+        <p>溝形鋼のサイズを選択し、JW-CAD 用の断面図テキストを生成できます。</p>
+        <p>各種パラメータを調整しながら、新規生成と追加入力を切り替えて利用できます。</p>
+    </div>
+
+    <script>
+        function copyResult() {
+            const resultElement = document.getElementById("resultDisplay");
+            if (!resultElement) {
+                return;
+            }
+
+            navigator.clipboard.writeText(resultElement.innerText).then(function () {
+                alert("クリップボードにコピーしました。");
+            }, function (err) {
+                alert("コピーに失敗しました: " + err);
+            });
+        }
+    </script>
+
+    <script type="module">
+        import { set, get } from 'https://unpkg.com/idb-keyval@6.2.0?module';
+
+        const DIR_KEY = 'cannel-size-save-dir';
+
+        async function saveDirHandle(handle) {
+            await set(DIR_KEY, handle);
+        }
+
+        async function loadDirHandle() {
+            return await get(DIR_KEY);
+        }
+
+        window.initializeCannelSave = () => {
+            const pickBtn = document.getElementById('pickDirBtn');
+            const saveBtn = document.getElementById('saveInDirBtn');
+            const resultEl = document.getElementById('resultDisplay');
+            const fnameEl = document.getElementById('saveFilename');
+
+            pickBtn.addEventListener('click', async () => {
+                try {
+                    const dirHandle = await window.showDirectoryPicker();
+                    await saveDirHandle(dirHandle);
+                    saveBtn.disabled = false;
+                    alert(`保存フォルダ「${dirHandle.name}」を設定しました`);
+                } catch {
+                    alert('フォルダ選択をキャンセルしました');
+                }
+            });
+
+            saveBtn.addEventListener('click', async () => {
+                const dirHandle = await loadDirHandle();
+                if (!dirHandle) {
+                    alert('先に保存フォルダを選択してください');
+                    return;
+                }
+                if (!resultEl) {
+                    alert('保存する出力結果がありません');
+                    return;
+                }
+
+                try {
+                    const filename = fnameEl.value;
+                    const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+                    const writable = await fileHandle.createWritable();
+                    await writable.write(resultEl.innerText);
+                    await writable.close();
+                    alert(`"${filename}" を ${dirHandle.name} に保存しました`);
+                } catch {
+                    alert('保存に失敗しました');
+                }
+            });
+        };
+    </script>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            if (window.initializeCannelSave) {
+                window.initializeCannelSave();
+            }
+        });
+    </script>
+</body>
+
+</html>
