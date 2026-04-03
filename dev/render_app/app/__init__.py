@@ -66,3 +66,4 @@ def create_app() -> Flask:
 
 
 
+PAGE_LABELS["ibeam_size"] = "Iビーム断面"
