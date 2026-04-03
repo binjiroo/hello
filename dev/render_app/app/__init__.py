@@ -60,3 +60,4 @@ def create_app() -> Flask:
         return "404 Not Found", 404
 
     return app
+
