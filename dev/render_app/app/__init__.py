@@ -1,4 +1,4 @@
-﻿import logging
+import logging
 import os
 
 from flask import Flask, render_template
@@ -6,6 +6,7 @@ from flask import Flask, render_template
 PAGE_LABELS = {
     "angle_size": "山形鋼",
     "chs_size": "丸パイプ",
+    "column_size": "コラム断面",
     "h_size": "H形鋼",
 }
 
@@ -61,6 +62,7 @@ def create_app() -> Flask:
         return "404 Not Found", 404
 
     return app
+
 
 
 
