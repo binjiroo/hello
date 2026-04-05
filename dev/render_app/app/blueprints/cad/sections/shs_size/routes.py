@@ -1,37 +1,29 @@
-﻿from flask import Blueprint, render_template, request, session
+from flask import Blueprint, render_template, request, session
 
-from app.data.steel_mappings import H_STEEL_SIZES_BY_GROUP, h_steel_r_mapping as steel_r_mapping
+from app.data.steel_mappings import shs_steel_r_mapping as steel_r_mapping
 
-CATEGORY_OPTIONS = [
-    ("light", "霆ｽ驥秋"),
-    ("narrow", "邏ｰ蟷・"),
-    ("middle", "荳ｭ蟷・"),
-    ("wide", "蠎・ｹ・"),
-]
-
-bp = Blueprint("h_size", __name__, url_prefix="/cad/h_size", template_folder="templates")
+bp = Blueprint(
+    "shs_size",
+    __name__,
+    url_prefix="/cad/shs_size",
+    template_folder="templates",
+)
 
 
-def get_sizes_for_category(category):
-    return H_STEEL_SIZES_BY_GROUP.get(category, [])
+def get_steel_sizes():
+    return list(steel_r_mapping.keys())
 
 
-def normalize_category(category):
-    return category if category in H_STEEL_SIZES_BY_GROUP else "light"
-
-
-def normalize_steel_name(category, steel_name):
-    sizes = get_sizes_for_category(category)
+def normalize_steel_name(steel_name):
+    sizes = get_steel_sizes()
     if steel_name in sizes:
         return steel_name
     return sizes[0] if sizes else ""
 
 
 def get_defaults():
-    steel_category = normalize_category(session.get("steel_category", "light"))
-    steel_name = normalize_steel_name(steel_category, session.get("steel_name", ""))
+    steel_name = normalize_steel_name(session.get("steel_name", ""))
     return {
-        "steel_category": steel_category,
         "steel_name": steel_name,
         "s1": session.get("s1", "01"),
         "s2": session.get("s2", "01"),
@@ -79,30 +71,19 @@ def index():
     ]
 
     defaults = get_defaults()
-    selected_category = normalize_category(
-        request.args.get("steel_category", defaults["steel_category"])
-    )
-    session["steel_category"] = selected_category
-    defaults["steel_category"] = selected_category
-    defaults["steel_name"] = normalize_steel_name(selected_category, defaults["steel_name"])
-
     result_str = ""
     error_message = ""
 
     if request.method == "POST":
         action = request.form.get("action", "new")
-        selected_category = normalize_category(
-            request.form.get("steel_category", defaults["steel_category"])
-        )
 
         if action == "clear":
             session.clear()
             defaults = get_defaults()
             return render_template(
-                "h_size/index.html",
+                "shs_size/index.html",
                 filenames=filenames,
-                steel_sizes=get_sizes_for_category(defaults["steel_category"]),
-                category_options=CATEGORY_OPTIONS,
+                steel_sizes=get_steel_sizes(),
                 defaults=defaults,
                 result_str="",
                 error_message="",
@@ -110,8 +91,8 @@ def index():
 
         for key in defaults.keys():
             session[key] = request.form.get(key, defaults[key])
-        session["steel_category"] = selected_category
-        session["steel_name"] = normalize_steel_name(selected_category, session["steel_name"])
+
+        session["steel_name"] = normalize_steel_name(session.get("steel_name", ""))
 
         steel_name = session["steel_name"]
         s1 = session["s1"]
@@ -127,21 +108,32 @@ def index():
         command = session["command"]
         prev_result = request.form.get("prev_result", "")
 
-        if not steel_name:
-            error_message = "驕ｸ謚槭＠縺溘き繝・ざ繝ｪ縺ｫH蝙矩蕎繧ｵ繧､繧ｺ縺後≠繧翫∪縺帙ｓ縲・"
+        if steel_name not in steel_r_mapping:
+            error_message = "選択したSHS角形鋼管サイズが見つかりません。"
             defaults = get_defaults()
             return render_template(
-                "h_size/index.html",
+                "shs_size/index.html",
                 filenames=filenames,
+                steel_sizes=get_steel_sizes(),
                 defaults=defaults,
                 result_str=result_str,
                 error_message=error_message,
-                steel_sizes=get_sizes_for_category(defaults["steel_category"]),
-                category_options=CATEGORY_OPTIONS,
             )
 
-        r = steel_r_mapping.get(steel_name, 0)
-        a, b, c, d = map(float, steel_name.split("x"))
+        try:
+            r1, r2 = steel_r_mapping[steel_name]
+            a, b, c = map(float, steel_name.split("x"))
+        except ValueError as exc:
+            error_message = f"サイズの解析に失敗しました: {exc}"
+            defaults = get_defaults()
+            return render_template(
+                "shs_size/index.html",
+                filenames=filenames,
+                steel_sizes=get_steel_sizes(),
+                defaults=defaults,
+                result_str=result_str,
+                error_message=error_message,
+            )
 
         offsets = {
             1: (b / 2, -a / 2),
@@ -158,36 +150,36 @@ def index():
         x_off, y_off = offsets.get(choice, (0, 0))
 
         w1 = b / 2
-        w2 = c / 2 + r
-        w3 = c / 2
+        w2 = (b / 2) - c
+        w3 = (b / 2) - r1
         h1 = a / 2
-        h2 = a / 2 - d
-        h3 = a / 2 - (d + r)
+        h2 = (a / 2) - c
+        h3 = (a / 2) - r1
 
         shape_list = [
-            ["#H型鋼断面"],
+            ["#角形鋼管断面"],
             [members],
             [separator, scale],
-            [command, "H-" + steel_name],
+            [command, "□-" + steel_name],
             [actual_size, scale],
             [s1, s2, 0 + x_off, h1 + y_off, 0 + x_off, -h1 + y_off, lc, lt, ly],
             [s1, s2, -w1 + x_off, 0 + y_off, w1 + x_off, 0 + y_off, lc, lt, ly],
             [s1, s2, -w1 + x_off, h1 + y_off, w1 + x_off, h1 + y_off, lc, lt, ly],
             [s1, s2, -w1 + x_off, -h1 + y_off, w1 + x_off, -h1 + y_off, lc, lt, ly],
-            [s1, s2, -w1 + x_off, h2 + y_off, -w2 + x_off, h2 + y_off, lc, lt, ly],
-            [s1, s2, w1 + x_off, h2 + y_off, w2 + x_off, h2 + y_off, lc, lt, ly],
-            [s1, s2, -w1 + x_off, -h2 + y_off, -w2 + x_off, -h2 + y_off, lc, lt, ly],
-            [s1, s2, w1 + x_off, -h2 + y_off, w2 + x_off, -h2 + y_off, lc, lt, ly],
-            [s1, s2, -w3 + x_off, h3 + y_off, -w3 + x_off, -h3 + y_off, lc, lt, ly],
-            [s1, s2, w3 + x_off, h3 + y_off, w3 + x_off, -h3 + y_off, lc, lt, ly],
-            [s1, s2, -w1 + x_off, h1 + y_off, -w1 + x_off, h2 + y_off, lc, lt, ly],
-            [s1, s2, w1 + x_off, h1 + y_off, w1 + x_off, h2 + y_off, lc, lt, ly],
-            [s1, s2, -w1 + x_off, -h1 + y_off, -w1 + x_off, -h2 + y_off, lc, lt, ly],
-            [s1, s2, w1 + x_off, -h1 + y_off, w1 + x_off, -h2 + y_off, lc, lt, ly],
-            [s1, s2, -w2 + x_off, h3 + y_off, 0, 90, lc, lt, ly, "E", r],
-            [s1, s2, w2 + x_off, h3 + y_off, 90, 180, lc, lt, ly, "E", r],
-            [s1, s2, -w2 + x_off, -h3 + y_off, 270, 0, lc, lt, ly, "E", r],
-            [s1, s2, w2 + x_off, -h3 + y_off, 180, 270, lc, lt, ly, "E", r],
+            [s1, s2, w1 + x_off, h1 + y_off, w1 + x_off, -h1 + y_off, lc, lt, ly],
+            [s1, s2, -w1 + x_off, h1 + y_off, -w1 + x_off, -h1 + y_off, lc, lt, ly],
+            [s1, s2, -w3 + x_off, h2 + y_off, w3 + x_off, h2 + y_off, lc, lt, ly],
+            [s1, s2, -w3 + x_off, -h2 + y_off, w3 + x_off, -h2 + y_off, lc, lt, ly],
+            [s1, s2, w2 + x_off, h3 + y_off, w2 + x_off, -h3 + y_off, lc, lt, ly],
+            [s1, s2, -w2 + x_off, h3 + y_off, -w2 + x_off, -h3 + y_off, lc, lt, ly],
+            [s1, s2, -w3 + x_off, h3 + y_off, 90, 180, lc, lt, ly, "E", r1],
+            [s1, s2, w3 + x_off, h3 + y_off, 0, 90, lc, lt, ly, "E", r1],
+            [s1, s2, -w3 + x_off, -h3 + y_off, 180, 270, lc, lt, ly, "E", r1],
+            [s1, s2, w3 + x_off, -h3 + y_off, 270, 0, lc, lt, ly, "E", r1],
+            [s1, s2, -w3 + x_off, h3 + y_off, 90, 180, lc, lt, ly, "E", r2],
+            [s1, s2, w3 + x_off, h3 + y_off, 0, 90, lc, lt, ly, "E", r2],
+            [s1, s2, -w3 + x_off, -h3 + y_off, 180, 270, lc, lt, ly, "E", r2],
+            [s1, s2, w3 + x_off, -h3 + y_off, 270, 0, lc, lt, ly, "E", r2],
             [separator, scale],
         ]
 
@@ -204,11 +196,10 @@ def index():
     defaults = get_defaults()
 
     return render_template(
-        "h_size/index.html",
+        "shs_size/index.html",
         filenames=filenames,
         defaults=defaults,
         result_str=result_str,
         error_message=error_message,
-        steel_sizes=get_sizes_for_category(defaults["steel_category"]),
-        category_options=CATEGORY_OPTIONS,
+        steel_sizes=get_steel_sizes(),
     )

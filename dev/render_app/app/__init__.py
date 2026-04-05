@@ -65,6 +65,9 @@ def create_app() -> Flask:
     return app
 
 
+PAGE_LABELS["shs_size"] = "角パイプ断面"
+
+
 
 
 PAGE_LABELS["ibeam_size"] = "Iビーム断面"
