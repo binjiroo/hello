@@ -175,6 +175,11 @@
                 {% endfor %}
             </select><br><br>
 
+            <label for="leader_follow" style="display:inline-flex; align-items:center; gap:8px;">
+                <input type="checkbox" name="leader_follow" id="leader_follow" value="1" {% if defaults.leader_follow=="1" %}checked{% endif %}>
+                指示線追従
+            </label><br><br>
+
             <textarea name="prev_result" style="display:none;">{{ result_str }}</textarea>
 
             <button type="submit" name="action" value="new">新規作成</button>
