@@ -71,7 +71,7 @@
         <form method="post">
             <textarea name="prev_result" style="display:none;">{{ result_str }}</textarea>
 
-            <label for="steel_name">主H形鋼サイズ</label><br>
+            <label for="steel_name">親H型鋼サイズ</label><br>
             <select name="steel_name" id="steel_name" required>
                 <option value="">--選択してください--</option>
                 {% for size in steel_sizes %}
@@ -79,7 +79,7 @@
                 {% endfor %}
             </select><br><br>
 
-            <label for="sub_steel_name">副H形鋼サイズ</label><br>
+            <label for="sub_steel_name">子H型鋼サイズ</label><br>
             <select name="sub_steel_name" id="sub_steel_name" required>
                 <option value="">--選択してください--</option>
                 {% for size in steel_sizes %}
@@ -87,65 +87,65 @@
                 {% endfor %}
             </select><br><br>
 
-            <label for="s1">線色コード1</label><br>
+            <label for="s1">制御コード1</label><br>
             <select name="s1" id="s1">
                 {% for val in ["10", "20", "01", "02", "03", "04", "05", "06", "07"] %}
                 <option value="{{ val }}" {% if defaults.s1 == val %}selected{% endif %}>{{ val }}</option>
                 {% endfor %}
             </select><br><br>
 
-            <label for="s2">線色コード2</label><br>
+            <label for="s2">制御コード2</label><br>
             <select name="s2" id="s2">
                 {% for val in ["10", "20", "01", "02", "03", "04", "05", "06", "07"] %}
                 <option value="{{ val }}" {% if defaults.s2 == val %}selected{% endif %}>{{ val }}</option>
                 {% endfor %}
             </select><br><br>
 
-            <label for="b_set">部材数</label><br>
+            <label for="b_set">部材数 (b_set)</label><br>
             <input type="number" name="b_set" id="b_set" value="{{ defaults.b_set }}"><br><br>
 
-            <label for="y_set">オフセット量 y_set</label><br>
+            <label for="y_set">高さ指定 (y_set)</label><br>
             <input type="number" name="y_set" id="y_set" value="{{ defaults.y_set }}"><br><br>
 
-            <label for="yset_limit">y_set 許容差</label><br>
+            <label for="yset_limit">高さ水平処理許容範囲 (|y_set|≦)</label><br>
             <input type="number" name="yset_limit" id="yset_limit" value="{{ defaults.yset_limit }}"><br><br>
 
-            <label for="offset_choice">基準位置</label><br>
+            <label for="offset_choice">基準点</label><br>
             <select name="offset_choice" id="offset_choice">
                 {% for val in ["1", "2", "3", "4", "5", "6", "7", "8", "9"] %}
                 <option value="{{ val }}" {% if defaults.offset_choice == val %}selected{% endif %}>{{ val }}</option>
                 {% endfor %}
             </select><br><br>
 
-            <label for="t">板厚 t</label><br>
+            <label for="t">板厚(t)</label><br>
             <select name="t" id="t">
                 {% for val in ["1.6", "2.3", "3.2", "4.5", "6", "9", "12", "16", "19", "24", "27"] %}
                 <option value="{{ val }}" {% if defaults.t == val %}selected{% endif %}>{{ val }}</option>
                 {% endfor %}
             </select><br><br>
 
-            <label for="hole_column_x">穴列数</label><br>
+            <label for="hole_column_x">列孔数</label><br>
             <select name="hole_column_x" id="hole_column_x">
                 {% for val in ["1", "2", "3", "4", "5"] %}
                 <option value="{{ val }}" {% if defaults.hole_column_x == val %}selected{% endif %}>{{ val }}</option>
                 {% endfor %}
             </select><br><br>
 
-            <label for="hole_row_y">穴行数</label><br>
+            <label for="hole_row_y">行孔数</label><br>
             <select name="hole_row_y" id="hole_row_y">
                 {% for val in ["1", "2", "3", "4", "5"] %}
                 <option value="{{ val }}" {% if defaults.hole_row_y == val %}selected{% endif %}>{{ val }}</option>
                 {% endfor %}
             </select><br><br>
 
-            <label for="hole_pitch">列ピッチ</label><br>
+            <label for="hole_pitch">列孔ピッチ</label><br>
             <select name="hole_pitch" id="hole_pitch">
                 {% for val in ["15", "30", "45", "50", "60", "75", "90", "100", "120", "150", "175", "200"] %}
                 <option value="{{ val }}" {% if defaults.hole_pitch == val %}selected{% endif %}>{{ val }}</option>
                 {% endfor %}
             </select><br><br>
 
-            <label for="row_hole_pitch">行ピッチ</label><br>
+            <label for="row_hole_pitch">行孔ピッチ</label><br>
             <select name="row_hole_pitch" id="row_hole_pitch">
                 {% for val in ["15", "30", "45", "50", "60", "75", "90", "100", "120", "150", "175", "200"] %}
                 <option value="{{ val }}" {% if defaults.row_hole_pitch == val %}selected{% endif %}>{{ val }}</option>
@@ -159,35 +159,35 @@
                 {% endfor %}
             </select><br><br>
 
-            <label for="end_hole_pitch">端部ピッチ</label><br>
+            <label for="end_hole_pitch">終端孔ピッチ</label><br>
             <select name="end_hole_pitch" id="end_hole_pitch">
                 {% for val in ["20", "30", "40", "50", "60", "75", "90", "100", "120", "150", "175", "200"] %}
                 <option value="{{ val }}" {% if defaults.end_hole_pitch == val %}selected{% endif %}>{{ val }}</option>
                 {% endfor %}
             </select><br><br>
 
-            <label for="hole_size">穴径</label><br>
+            <label for="hole_size">孔径</label><br>
             <select name="hole_size" id="hole_size">
                 {% for val in ["0", "9", "12", "15", "18", "22", "24", "26", "30", "33"] %}
                 <option value="{{ val }}" {% if defaults.hole_size == val %}selected{% endif %}>{{ val }}</option>
                 {% endfor %}
             </select><br><br>
 
-            <label for="lc">線色</label>
+            <label for="lc">線色:</label>
             <select name="lc" id="lc">
                 {% for val in ["1", "2", "3", "4", "5", "6"] %}
                 <option value="{{ val }}" {% if defaults.lc == val %}selected{% endif %}>{{ val }}</option>
                 {% endfor %}
             </select><br><br>
 
-            <label for="lt">線種</label>
+            <label for="lt">線種:</label>
             <select name="lt" id="lt">
                 {% for val in ["1", "2", "3", "4", "5", "6", "7", "8", "9"] %}
                 <option value="{{ val }}" {% if defaults.lt == val %}selected{% endif %}>{{ val }}</option>
                 {% endfor %}
             </select><br><br>
 
-            <label for="ly">レイヤー</label>
+            <label for="ly">レイヤー:</label>
             <select name="ly" id="ly">
                 {% for val in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "-11"] %}
                 <option value="{{ val }}" {% if defaults.ly == val %}selected{% endif %}>{{ val }}</option>
@@ -215,7 +215,7 @@
 
         <p><a href="{{ url_for('home') }}">ホームに戻る</a></p>
 
-        <label for="saveFilename">保存ファイル名</label>
+        <label for="saveFilename">保存ファイル名：</label>
         <select name="saveFilename" id="saveFilename">
             {% for fname in filenames %}
             <option value="{{ fname }}">{{ fname }}</option>
