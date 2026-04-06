@@ -1,0 +1,72 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>建具・線記号変形データ生成アプリ ホーム</title>
+  <style>
+    li {
+      font-size: 18pt;
+      padding: 2px;
+      margin: 0px;
+    }
+  </style>
+  <style>
+    ol.pref-list {
+      font-size: 18px;
+      padding-left: 20px;
+      list-style-position: inside;
+    }
+
+    ol.pref-list li:nth-child(1) {
+      color: red;
+      background-color: rgba(255, 0, 0, 0.3); /* 70% 白 → 30% 赤 */
+    }
+
+    ol.pref-list li:nth-child(2) {
+      color: orange;
+      background-color: rgba(255, 165, 0, 0.3);
+    }
+
+    ol.pref-list li:nth-child(3) {
+      color: green;
+      background-color: rgba(0, 128, 0, 0.3);
+    }
+
+    ol.pref-list li:nth-child(4) {
+      color: blue;
+      background-color: rgba(0, 0, 255, 0.3);
+    }
+
+    ol.pref-list li:nth-child(5) {
+      color: purple;
+      background-color: rgba(128, 0, 128, 0.3);
+    }
+
+    ol.pref-list li {
+      padding: 4px 8px;
+      border-radius: 6px;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>JWWでの建具データや線記号変形データを生成するアプリを提供します</h1>
+  <h2>本アプリはJW-CAD(JW-win)の建具データや線記号変形用のテキストを生成するためのツールです</h2>
+  <h2>各Link先のアプリのフォームで必要な情報を入力して実行すると建具データまたは線記号変形データ用のテキストを生成します</h2>
+  <p>以下のリンク先から目的に合った生成アプリを選択してください：</p>
+  <ul>
+    {% for name, url in pages %}
+      <li><a href="{{ url }}">{{ name }}</a></li>
+    {% endfor %}
+  </ul>
+
+  <form>
+    <label><input type="checkbox" name="contact" value="email"> メール</label>
+    <label><input type="checkbox" name="contact" value="phone"> 電話</label>
+    <label for="birth">生年月日:</label>
+    <input type="date" id="birth" name="birth">
+    <label for="tel">電話番号:</label>
+    <input type="tel" id="tel" name="tel" placeholder="090-1234-5678">
+  </form>
+</body>
+</html>

@@ -8,10 +8,10 @@ from app.blueprints.cad.sections.size_dat_utils import (
 )
 
 CATEGORY_OPTIONS = [
-    ("light", "霆ｽ驥秋"),
-    ("narrow", "邏ｰ蟷・"),
-    ("middle", "荳ｭ蟷・"),
-    ("wide", "蠎・ｹ・"),
+    ("light", "軽量H"),
+    ("narrow", "細幅H"),
+    ("middle", "中幅H"),
+    ("wide", "広幅H"),
 ]
 
 bp = Blueprint("h_size", __name__, url_prefix="/cad/h_size", template_folder="templates")
