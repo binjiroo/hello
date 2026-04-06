@@ -1,0 +1,72 @@
+<!-- app/templates/steel_materials_order/print.html -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>鋼材注文書 印刷プレビュー</title>
+  <style>
+    @media print {
+      @page { margin: 20mm; }
+      header, footer { position: fixed; width: 100%; }
+      header { top: 0; }
+      footer { bottom: 0; }
+    }
+    body { margin: 0; padding: 0; }
+    .header-large { font-size: 24pt; margin-bottom: 10px; }
+    .header-small { font-size: 14pt; }
+    table { width: 100%; border-collapse: collapse; margin-top: 120px; margin-bottom: 80px; }
+    th, td { border: 1px solid #000; padding: 4px; }
+    .col-wide   { width: 30%; }
+    .col-medium { width: 20%; }
+    .col-narrow { width: 10%; }
+    footer .footer-large { font-size: 16pt; }
+    footer .footer-small { font-size: 12pt; }
+  </style>
+</head>
+<body onload="window.print()">
+
+  <header>
+    <div class="header-large">{{ project_name }}</div>
+    <div class="header-small">
+      発注日: {{ order_date }}　納期: {{ delivery }}
+    </div>
+  </header>
+
+  <main>
+    <table>
+      <thead>
+        <tr>
+          <th class="col-wide">鋼材</th>
+          <th class="col-medium">寸法</th>
+          <th class="col-narrow">数量</th>
+          <th class="col-narrow">単重量</th>
+          <th class="col-narrow">総重量</th>
+          <th class="col-wide">備考</th>
+          <th class="col-narrow">修正</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for steel, dim, qty, unit, total, remark, rev in items %}
+        <tr>
+          <td>{{ steel }}</td>
+          <td>{{ dim }}</td>
+          <td>{{ qty }}</td>
+          <td>{{ unit }}</td>
+          <td>{{ total }}</td>
+          <td>{{ remark }}</td>
+          <td>{{ rev }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </main>
+
+  <footer>
+    <div class="footer-large">社名：○○○○株式会社</div>
+    <div class="footer-small">
+      TEL: 03-1234-5678　FAX: 03-1234-5679　e-mail: info@example.com
+    </div>
+  </footer>
+
+</body>
+</html>

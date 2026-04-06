@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鋼材注文書</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/print.css') }}">
+    <script>
+        window.PagedConfig = {
+            auto: false,
+            content: '.print-area'   // ← ページ化の対象を限定
+        };
+    </script>
+    <script src="https://unpkg.com/pagedjs@0.4.3/dist/paged.polyfill.js"></script>
+<style id="print-20rows-overrides">
+  /* ========= 可変パラメータ ========= */
+  :root{
+    /* ヘッダー/フッターの“用紙端との見た目ギャップ” */
+    --header-gap: 0mm;  /* 上端→ヘッダー上部 */
+    --footer-gap: 0mm;   /* フッター下部→下端 */
+
+    /* ヘッダー/フッターの実高（JSで実測反映する想定。未反映でも仮値で動く） */
+    --header-h: 20mm;    /* 仮：タイトル+情報行ぶん */
+    --footer-h: 10mm;    /* 仮：会社情報ぶん */
+
+    /* 1行の行高（JSで再計算して上書き。仮値でも動作） */
+    --row-h-mm: 7.5pt;
+
+    --hdr-title-h: 7mm;  /* タイトル行 */
+    --hdr-info-h:  6mm;  /* 基本情報行 */
+    --hdr-title-font: 14pt;
+    --hdr-info-font:  14pt;
+  }
+
+  /* ========= ランニング要素（Paged.jsのヘッダー/フッター化） ========= */
+  .running-header{ position: running(header); }
+  .running-footer{ position: running(footer); }
+
+  /* ========= 画面⇄印刷の表示切替（既存より強めに上書き） ========= */
+  .order-table-edit  { display: table; }
+  .order-table-print { display: none; }
+  .print-area { display: block; }
+
+  .order-table-print thead{ display: table-header-group !important; }
+
+  .print-area.is-printing .order-table-edit  { display: none !important; }
+  .print-area.is-printing .order-table-print { display: none !important; }
+  /* ←ここを追加：分割して生成するテーブルだけを表示 */
+  .print-area.is-printing .page-table { display: table !important; }
+  .print-area.is-printing .no-print,
+  .print-area.is-printing .top-info,
+  .print-area.is-printing .steel-selection,
+  .print-area.is-printing .dimension-slider-set,
+  .print-area.is-printing .quantity-slider-set,
+  .print-area.is-printing form input,
+  .print-area.is-printing form select,
+  .print-area.is-printing form button,
+  .print-area.is-printing form textarea{
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* 画面側UIは本体側でも全部消す（.print-area の外） */
+  body.printing .no-print,
+  body.printing .top-info,
+  body.printing .steel-selection,
+  body.printing .dimension-slider-set,
+  body.printing .quantity-slider-set,
+  body.printing form input,
+  body.printing form select,
+  body.printing form button,
+  body.printing form textarea {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* ========= テーブルの固定レイアウト・列の繰り返し ========= */
+  .order-table-print,
+  .pagedjs_page .order-table-print{
+    table-layout: fixed !important;
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin: 0 !important;
+    border-spacing: 0 !important;
+  }
+  .order-table-print th,
+  .order-table-print td,
+  .pagedjs_page .order-table-print th,
+  .pagedjs_page .order-table-print td{
+    border: 1px solid #000;
+    padding: 4px;
+    box-sizing: border-box;
+    text-align: center;
+    min-width: 0;
+  }
+  /* 各ページ先頭にヘッダー行（thead）を必ず出す */
+  .pagedjs_page .order-table-print thead{
+    display: table-header-group !important;
+  }
+  /* 1行の高さ：20行がちょうど入るように JSで --row-h-mm を上書き予定（未上書きでも仮値で動く） */
+.order-table-print tbody tr{
+  height: var(--row-h-mm);
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+  /* ========= 列幅（必要なら調整。既存のままでもOK） ========= */
+  /* 1列目 */
+  .order-table-print thead th:nth-child(1),
+  .order-table-print tbody td:nth-child(1),
+  .pagedjs_page .order-table-print thead th:nth-child(1),
+  .pagedjs_page .order-table-print tbody td:nth-child(1){ width: 5% !important; }
+  /* 2列目 */
+  .order-table-print thead th:nth-child(2),
+  .order-table-print tbody td:nth-child(2),
+  .pagedjs_page .order-table-print thead th:nth-child(2),
+  .pagedjs_page .order-table-print tbody td:nth-child(2){ width: 34% !important; }
+  /* 3〜6列目（各7.5%）*/
+  .order-table-print thead th:nth-child(3),
+  .order-table-print tbody td:nth-child(3),
+  .pagedjs_page .order-table-print thead th:nth-child(3),
+  .pagedjs_page .order-table-print tbody td:nth-child(3),
+  .order-table-print thead th:nth-child(4),
+  .order-table-print tbody td:nth-child(4),
+  .pagedjs_page .order-table-print thead th:nth-child(4),
+  .pagedjs_page .order-table-print tbody td:nth-child(4){ width: 7% !important; }
+  .order-table-print thead th:nth-child(5),
+  .order-table-print tbody td:nth-child(5),
+  .pagedjs_page .order-table-print thead th:nth-child(5),
+  .pagedjs_page .order-table-print tbody td:nth-child(5),
+  .order-table-print thead th:nth-child(6),
+  .order-table-print tbody td:nth-child(6),
+  .pagedjs_page .order-table-print thead th:nth-child(6),
+  .pagedjs_page .order-table-print tbody td:nth-child(6){ width: 9% !important; }
+  /* 7列目 */
+  .order-table-print thead th:nth-child(7),
+  .order-table-print tbody td:nth-child(7),
+  .pagedjs_page .order-table-print thead th:nth-child(7),
+  .pagedjs_page .order-table-print tbody td:nth-child(7){ width: 20% !important; }
+  /* 8列目 */
+  .order-table-print thead th:nth-child(8),
+  .order-table-print tbody td:nth-child(8),
+  .pagedjs_page .order-table-print thead th:nth-child(8),
+  .pagedjs_page .order-table-print tbody td:nth-child(8){ width: 5% !important; }
+
+  /* ========= 印刷では削除列を完全非表示 ========= */
+  body.printing th.no-print,
+  body.printing td.no-print{
+    display: none !important;
+    width: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+
+/* ====== ★ココが一番重要：border-boxで高さを“マージン領域サイズ”に一致 ====== */
+/* ヘッダー：高さ = 実高 + 10mm（gap）。中で padding-top:10mm で下げる */
+.pagedjs_margin-content .print-header-wrapper{
+  box-sizing: border-box !important;
+  height: auto !important;
+  padding: 0 !important;        /* ← ここを 0 に */
+  width: 100% !important;
+}
+/* フッター：高さ = 実高 + 5mm。中で padding-bottom:5mm で上げる */
+.pagedjs_margin-content .print-footer{
+  box-sizing: border-box !important;
+  height: auto !important;
+  padding: 0 !important;        /* ← ここを 0 に */
+  width: 100% !important;
+}
+/* セルの線・パディング（必要なら維持） */
+.pagedjs_margin-content .print-header-wrapper th,
+.pagedjs_margin-content .print-header-wrapper td,
+.pagedjs_margin-content .print-footer th,
+.pagedjs_margin-content .print-footer td{
+  border: 1px solid #000 !important;
+  padding: 4px !important;
+  box-sizing: border-box !important;
+}
+
+  /* ========= 画面ではヘッダー/フッターを薄く見せる（任意） ========= */
+  @media screen{
+    .running-header .print-header-wrapper,
+    .running-footer .print-footer{ opacity: .6; border: none; }
+  }
+
+  @media print {
+    /* まず全消し */
+    body * { visibility: hidden !important; }
+
+    /* Paged.js が作る .pagedjs_pages だけを見せる */
+    .pagedjs_pages, .pagedjs_pages * { visibility: visible !important; }
+
+    /* 用紙原点に寄せる */
+    .pagedjs_pages {
+      position: absolute !important;
+      left: 0 !important;
+      top: 0 !important;
+    }
+  .pagedjs_page .page-table th,
+  .pagedjs_page .page-table td{
+    padding: 2px 3px !important;  /* 既存の4pxから縮小 */
+    line-height: 1.1 !important;
+    font-size: 9.5pt !important;  /* 9〜10ptで調整 */
+  }
+  }
+
+  @page {
+    /* ページ上下に余白を確保 */
+    margin-top: 10mm;
+    margin-bottom: 5mm;
+
+    /* 左右の余白は必要に応じて調整 */
+    margin-left: 15mm;
+    margin-right: 15mm;
+  }
+
+/* マージン領域の横パディングをゼロ化（トップ/ボトム両方） */
+.pagedjs_margin-top-center,
+.pagedjs_margin-bottom-center{
+  padding: 0 !important;
+}
+
+/* マージンボックス内の配置を制御（ヘッダーは下寄せ、フッターは上寄せ） */
+.pagedjs_margin-top-center .pagedjs_margin-content{
+  display: flex !important;
+  align-items: flex-end !important;   /* ← ヘッダーを下端に */
+}
+.pagedjs_margin-bottom-center .pagedjs_margin-content{
+  display: flex !important;
+  align-items: flex-start !important; /* ← フッターを上端に */
+}
+
+/* ====== ヘッダー/フッター表の基本（幅・折り畳み） ====== */
+.pagedjs_margin-content table.print-header-wrapper{
+  height: auto !important;
+  width: 100% !important;
+  border-collapse: collapse !important;
+  table-layout: fixed !important;
+}
+.pagedjs_margin-content table.print-footer{
+  height: auto !important;
+  width: 100% !important;
+  border-collapse: collapse !important;
+  table-layout: fixed !important;
+}
+
+.pagedjs_margin-top-center  .pagedjs_margin-content{ display:flex !important; align-items:flex-end   !important; }
+.pagedjs_margin-bottom-center .pagedjs_margin-content{ display:flex !important; align-items:flex-start !important; }
+
+
+/* ★縦線は出す（以前の border-left/right:none を上書き） */
+.pagedjs_margin-content table.print-header-wrapper th,
+.pagedjs_margin-content table.print-header-wrapper td,
+.pagedjs_margin-content table.print-footer th,
+.pagedjs_margin-content table.print-footer td{
+  border: 1px solid #000 !important;
+  padding: 4px !important;
+  box-sizing: border-box !important;
+}
+
+/* （任意）本文とぶつからないように下線/上線を消す */
+.pagedjs_margin-content table.print-header-wrapper tr:last-child > *{
+  border-bottom: none !important;
+}
+.pagedjs_margin-content table.print-footer tr:first-child > *{
+  border-top: none !important;
+}
+
+/* 10mm/5mm の上下ギャップは“縦方向だけ”パディングで与える（横は 0 のまま） */
+.pagedjs_margin-content table.print-header-wrapper{
+  height: var(--header-h) !important;
+  padding-top: var(--header-gap) !important;   /* 10mm 下げる */
+  padding-bottom: 0 !important;
+}
+.pagedjs_margin-content table.print-footer{
+  height: var(--footer-h) !important;
+  padding-top: 0 !important;
+  padding-bottom: var(--footer-gap) !important;/* 5mm 上げる */
+}
+
+/* （任意）本文と重ならないよう、ヘッダー最下段の下線・フッター最上段の上線は消す */
+.pagedjs_margin-content table.print-header-wrapper tr:last-child > *{
+  border-bottom: none !important;
+}
+.pagedjs_margin-content table.print-footer tr:first-child > *{
+  border-top: none !important;
+}
+
+/* 余白ボックスのパディングは 0（保険） */
+.pagedjs_margin-top-center,
+.pagedjs_margin-bottom-center {
+  padding: 0 !important;
+}
+
+/* 位置決め：親を相対、コンテンツを絶対配置に */
+.pagedjs_margin-top-center,
+.pagedjs_margin-bottom-center {
+  position: relative !important;
+}
+
+.pagedjs_margin-top-center .pagedjs_margin-content {
+  position: absolute !important;
+  left: 0; right: 0;
+  bottom: 0 !important;    /* ← ヘッダーを“下寄せ”に固定 */
+}
+
+.pagedjs_margin-bottom-center .pagedjs_margin-content {
+  position: absolute !important;
+  left: 0; right: 0;
+  top: 0 !important;       /* ← フッターを“上寄せ”に固定 */
+}
+
+/* ヘッダー／フッターの高さは auto（固定値を使わない） */
+.pagedjs_margin-content .print-header-wrapper,
+.pagedjs_margin-content .print-footer,
+.pagedjs_margin-content table.print-header-wrapper,
+.pagedjs_margin-content table.print-footer {
+  height: auto !important;
+  padding: 0 !important;
+}
+
+/* ========== page-table（分割後テーブル）の基準ルール：1回だけ定義 ========== */
+.page-table{
+  margin: 0 !important;
+  border-collapse: collapse !important;
+  table-layout: fixed !important;
+  width: 100% !important;
+
+  /* ← ここを“常に auto”に固定。末尾で改ページしない */
+  break-after: auto !important;
+  page-break-after: auto !important;
+
+  /* 任意だが実用的 */
+  page-break-inside: avoid !important;
+}
+
+/* Paged.js のページ内でも念のため 0 を強制 */
+.pagedjs_page .page-table {
+  margin: 0 !important;
+}
+
+/* 各ページの最終行だけ高さを足せるようにする（テーブル単位のCSS変数） */
+.pagedjs_page .page-table { --last-extra: 0mm; }
+.pagedjs_page .page-table tbody tr:last-child{
+  height: calc(var(--row-h-mm) + var(--last-extra, 0mm)) !important;
+}
+
+/* ========== 2枚目以降だけ、先頭で改ページ ========== */
+.page-table + .page-table{
+  break-before: page !important;
+  page-break-before: always !important;
+}
+
+/* ========== ヘッダー/フッターの中身を薄くする（測定対象＆実ページ両方） ========== */
+
+/* 画面側の“測定用”ゴースト（.running-*) も縮める：ここが小さく計測されると本文が広がる */
+.running-header .print-header-wrapper th,
+.running-header .print-header-wrapper td,
+.running-footer .print-footer th,
+.running-footer .print-footer td{
+  padding: 3px 3px !important;    /* 既存 4px → 2px に */
+  line-height: 1.1 !important;
+  font-size: 14pt !important;     /* 9〜10pt で好みに調整可 */
+}
+
+/* Paged.js のマージン領域に載る“本番側”も同じにして見た目一致 */
+.pagedjs_margin-content .print-header-wrapper th,
+.pagedjs_margin-content .print-header-wrapper td,
+.pagedjs_margin-content .print-footer th,
+.pagedjs_margin-content .print-footer td{
+  padding: 3px 3px !important;
+  line-height: 1.1 !important;
+  font-size: 14pt !important;
+}
+
+/* タイトル行（先頭行だけ）をさらに薄くしたければオプションで */
+.running-header .print-header-wrapper thead tr:first-child td,
+.pagedjs_margin-content .print-header-wrapper thead tr:first-child td{
+  padding-top: 2.5px !important;
+  padding-bottom: 2.5px !important;
+  font-weight: 600 !important; /* 必要なら太字を少し落とす */
+}
+
+/* 枠線も細くできるなら（プリンタ次第で 0.25mm〜0.5pt 程度） */
+.pagedjs_margin-content .print-header-wrapper th,
+.pagedjs_margin-content .print-header-wrapper td,
+.pagedjs_margin-content .print-footer th,
+.pagedjs_margin-content .print-footer td,
+.running-header .print-header-wrapper th,
+.running-header .print-header-wrapper td,
+.running-footer .print-footer th,
+.running-footer .print-footer td{
+  border-width: 0.25mm !important;
+}
+
+/* パディング・折返しの制御は共通で */
+.pagedjs_margin-content .print-header-wrapper th,
+.pagedjs_margin-content .print-header-wrapper td{
+  padding-block: 2px !important;
+  padding-inline: 3px !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 1行目（タイトル） */
+.pagedjs_margin-content .print-header-wrapper thead tr:first-child > *{
+  height: var(--hdr-title-h) !important;
+  line-height: var(--hdr-title-h) !important;
+  font-size: var(--hdr-title-font) !important;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* 2行目（基本情報） */
+.pagedjs_margin-content .print-header-wrapper thead tr:nth-child(2) > *{
+  height: var(--hdr-info-h) !important;
+  line-height: var(--hdr-info-h) !important;
+  font-size: var(--hdr-info-font) !important;
+}
+
+/* “消す”ではなく等価の 1px を確保（透明） */
+.pagedjs_margin-content .print-header-wrapper thead tr:last-child > *{
+  border-bottom: 1px solid transparent !important;
+}
+/* 両行とも同じパディングに固定 */
+.pagedjs_margin-content .print-header-wrapper th,
+.pagedjs_margin-content .print-header-wrapper td{
+  padding-block: 2px !important;
+  padding-inline: 2px !important;
+  vertical-align: middle !important;
+}
+
+/* ========== 行高の変数（必要ならここだけ変えればOK） ========== */
+:root{
+  /* データ行の高さ（既存） */
+  --row-h-mm: 8mm;
+  /* 見出し行の高さ（データ行と同じにしたければ同値に） */
+  --thead-row-mm: var(--row-h-mm);
+  /* セルの上下パディング（見た目の詰まり/余裕を微調整） */
+  --thead-vpad-mm: 1.0mm;
+  --tbody-vpad-mm: 1.0mm;
+  /* 1px ≒ 0.2646mm（境界線ぶんの見た目補正に使用） */
+  --border-mm: 0.2646mm;
+}
+
+/* ========== 見出し行（thead）の高さを固定 ========== */
+.order-table-print thead th,
+.pagedjs_page .order-table-print thead th{
+  height: var(--thead-row-mm) !important;
+  /* 中身を中央に置くため line-height を「高さ − 上下padding − 境界線ぶん」に */
+  line-height: calc(var(--thead-row-mm) - 2*var(--thead-vpad-mm) - var(--border-mm)) !important;
+  padding-top: var(--thead-vpad-mm) !important;
+  padding-bottom: var(--thead-vpad-mm) !important;
+  vertical-align: middle !important;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ========== データ行（tbody）のパディングも明示（高さ合わせ用） ========== */
+.order-table-print tbody td,
+.pagedjs_page .order-table-print tbody td{
+  padding-top: var(--tbody-vpad-mm) !important;
+  padding-bottom: var(--tbody-vpad-mm) !important;
+  vertical-align: middle !important;
+}
+
+/* ========== 本体（tbody）のフォントサイズ指定 ========== */
+.order-table-print tbody td,
+.pagedjs_page .order-table-print tbody td{
+  font-size: 14pt !important;   /* ←必要なサイズに変更してください */
+}
+
+/* 見出し（thead）のフォント（必要に応じて同じ or 少し強調） */
+.order-table-print thead th,
+.pagedjs_page .order-table-print thead th{
+  font-size: 14pt !important;   /* tbody と同じにするなら同値 */
+  font-weight: 600 !important;  /* 強調不要なら 400〜500 に */
+}
+
+:root{
+  /* ▼基本のつまみ */
+  --rows-per-page: 20;        /* 1ページの行数（20固定→19/21にすれば自動計算の行高が変わる） */
+  --row-auto-scale: 1.06;         /* 自動計算した行高に倍率（例 0.98=少し詰める / 1.02=少し広げる） */
+  --row-auto-bias-mm: 0.4;       /* 自動行高に足し引きするmm（例 0.2mm） */
+  --row-snap-mm: 0.25;            /* 0.25 などで段階刻み。0で無効 */
+  --row-min-mm: 7;           /* 下限（詰め過ぎ防止） */
+
+  /* ▼仕上げの微調整（任意） */
+  --row-tighten-iters: 0;      /* プレビュー後の“隙間つめ”反復回数。0～2くらい */
+}
+
+</style>
+
+</head>
+<body>
+            <template id="order-row-template">
+                <tr>
+                    <td class="row-no" style="border: 1px solid #000;"></td>
+
+                    <td style="border: 1px solid #000;">
+                    <input type="text" name="steel_name[]" class="print-visible" style="width: 95%;">
+                    </td>
+
+                    <td style="border: 1px solid #000;">
+                    <input type="text" name="steel_size[]" class="print-visible" style="width: 95%;">
+                    </td>
+
+                    <td style="border: 1px solid #000;">
+                    <input type="text" name="quantity[]" class="print-visible" style="width: 95%;">
+                    </td>
+
+                    <td style="border: 1px solid #000;">
+                    <input type="text" step="any" name="unit_weight[]" class="print-visible" style="width: 95%;">
+                    </td>
+
+                    <td style="border: 1px solid #000;">
+                    <input type="text" step="any" name="total_weight[]" class="print-visible" style="width: 95%;">
+                    </td>
+
+                    <td style="border: 1px solid #000;">
+                    <input type="text" name="remarks[]" class="print-visible" style="width: 95%;">
+                    </td>
+
+                    <td style="border: 1px solid #000;">
+                    <input type="text" name="corrections[]" class="print-visible" style="width: 95%;">
+                    </td>
+
+                    <td class="no-print" style="border: 1px solid #000;">
+                    <button type="button" class="delete-row">削除</button>
+                    </td>
+                </tr>
+            </template>
+    <h1 class="no-print">鋼材注文書</h1>
+
+    <form method="POST">
+
+        <!-- 基本情報＋連絡先 -->
+        <div class="top-info" style="display:flex; justify-content: space-between; border: 1px solid #000; padding:10px; margin-bottom: 10px;">
+            <div class="basic-info" style="flex: 0 0 49%;">
+                <label>物件名: <input type="text" id="project_name" name="project_name" value="{{ project_name or '' }}" list="project_name_list" autocomplete="off"></label>
+                <datalist id="project_name_list"></datalist>
+                <label>発注日: <input type="date" id="order_date" name="order_date" value="{{ order_date or '' }}"></label>
+                <label>希望納期: <input type="date" id="delivery_date" name="delivery_date" value="{{ delivery_date or '' }}"></label>
+                <label>担当: <input type="text" id="chief_date" name="chief_date" value="{{ chief_date or '' }}" list="chief_date_list" autocomplete="off"></label>
+                <datalist id="chief_date_list"></datalist>
+
+            </div>
+            <div class="contact-info" style="flex: 0 0 49%;">
+                <label>社名: <input type="text" id="company_name" name="company_name" value="{{ company_name or '' }}" list="company_name_list" autocomplete="off"></label>
+                <datalist id="company_name_list"></datalist>
+                <label>TEL: <input type="text" id="tel" name="tel" value="{{ tel or '' }}" list="tel_list" autocomplete="off"></label>
+                <datalist id="tel_list"></datalist>
+                <label>FAX: <input type="text" id="fax" name="fax" value="{{ fax or '' }}" list="fax_list" autocomplete="off"></label>
+                <datalist id="fax_list"></datalist>
+                <label>e-mail: <input type="email" id="email" name="email" value="{{ email or '' }}" list="email_list" autocomplete="off"></label>
+                <datalist id="email_list"></datalist>
+                <button type="submit">送信</button>
+            </div>
+        </div>
+
+        <!-- 鋼材選択＋ボタン -->
+        <div class="steel-selection" style="display:flex; justify-content: space-between; border:1px solid #000; padding:10px; margin-bottom: 10px;">
+            <div class="steel-select" style="flex: 0 0 49%;">
+                <label>鋼材カテゴリ:
+                    <select name="steel_category" id="steel_category">
+                        <option value="">選択してください</option>
+                        {% for category in steel_data.keys() %}
+                            <option value="{{ category }}">{{ category }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>鋼材:
+                    <select name="steel_item" id="steel_item">
+                        <option value="">選択してください</option>
+                    </select>
+                </label>
+            </div>
+            <div class="button-group" style="flex: 0 0 49%; display:flex; align-items: center; gap: 10px;">
+                <button type="button" id="add_steel_button">鋼材追加</button>
+                <button type="button" id="add_row_button">行追加</button>
+                <button type="button" name="action" value="preview" id="print-preview-btn">印刷プレビュー</button>
+                <button type="submit" name="action" value="save">保存</button>
+            </div>
+        </div>
+
+        <!-- 寸法入力セクション -->
+        <div class="dimension-slider-set" style="display:flex; align-items:center; gap:5px; margin-bottom:10px;">
+            <label for="dimension_step" style="width:7.5%;">寸法(mm):</label>
+            <input type="range" id="dimension_slider" min="0" max="20000" step="0.1" style="width:70%;">
+            <span id="dimension_value" style="width:7.5%; text-align:center;">0</span>
+            <select id="dimension_step" style="width:7.5%;">
+                <option value="0.1">0.1</option>
+                <option value="1">1</option>
+                <option value="10">10</option>
+                <option value="100">100</option>
+                <option value="1000">1000</option>
+                <option value="10000">10000</option>
+            </select>
+            <button type="button" id="add_dimension_button" style="width:7.5%;">寸法追加</button>
+        </div>
+
+        <!-- 数量入力セクション -->
+        <div class="quantity-slider-set" style="display:flex; align-items:center; gap:5px; margin-bottom:10px;">
+            <label for="quantity_step" style="width:7.5%;">数量:</label>
+            <input type="range" id="quantity_slider" min="0" max="9999" step="1" style="width:70%;">
+            <span id="quantity_value" style="width:7.5%; text-align:center;">0</span>
+            <select id="quantity_step" style="width:7.5%;">
+                <option value="1">1</option>
+                <option value="10">10</option>
+                <option value="100">100</option>
+                <option value="1000">1000</option>
+            </select>
+            <button type="button" id="add_quantity_button" style="width:7.5%;">数量追加</button>
+        </div>
+
+        <div class="no-print" style="display: flex; justify-content: space-between; gap: 20px; margin-bottom: 20px;">
+
+            <!-- 貼り付けエリア①：鋼材・寸法・本数 自動入力 -->
+            <div style="flex: 1; border: 1px solid #ccc; padding: 10px;">
+                <h3>鋼材＋寸法＋数量 一括入力</h3>
+                <textarea id="auto_fill_textarea" rows="10" style="width: 100%; resize: vertical;"></textarea>
+                <button id="parse-fill-button" type="button">入力</button>
+            </div>
+
+            <!-- 貼り付けエリア②：鋼材または寸法から数量算出 -->
+            <div class="no-print" style="flex: 1; border: 1px solid #ccc; padding: 10px;">
+                <h3>鋼材･寸法の数量カウント</h3>
+                <textarea id="count_and_fill_textarea" rows="10" style="width: 100%; resize: vertical;"></textarea>
+                <button id="count-fill-button" type="button">数量入力</button>
+            </div>
+
+        </div>
+
+        <!-- 印刷プレビュー範囲 -->
+        <div class="print-area">
+
+            <!-- 毎ページヘッダー（ゴースト） -->
+            <div class="running-header">
+                <table class="print-header-wrapper">
+                <colgroup>
+                    <col style="width:7%"><col style="width:40%">
+                    <col style="width:8%"><col style="width:10%">
+                    <col style="width:8%"><col style="width:10%">
+                    <col style="width:7%"><col style="width:10%">
+                </colgroup>
+                <thead>
+                    <tr>
+                    <td colspan="8" style="text-align:center; font-weight:bold;">鋼材注文書</td>
+                    </tr>
+                    <tr>
+                    <td>物件名</td><td>{{ project_name }}</td>
+                    <td>発注日</td><td>{{ order_date }}</td>
+                    <td>希望納期</td><td>{{ delivery_date }}</td>
+                    <td>担当</td><td>{{ chief_date }}</td>
+                    </tr> <!-- ← ここ忘れずに閉じる -->
+                </thead>
+                </table>
+            </div>
+
+            <!-- 毎ページフッター（ゴースト） -->
+            <div class="running-footer" id="footer">
+                <table class="print-footer">
+                <colgroup>
+                    <col style="width:5%"><col style="width:30%">
+                    <col style="width:4%"><col style="width:15%">
+                    <col style="width:4%"><col style="width:15%">
+                    <col style="width:7%"><col style="width:20%">
+                </colgroup>
+                <tbody>
+                    <tr>
+                        <td>社名</td>
+                        <td>{{ company_name }}</td>
+                        <td>TEL</td>
+                        <td>{{ tel }}</td>
+                        <td>FAX</td>
+                        <td>{{ fax }}</td>
+                        <td>e-mail</td>
+                        <td>{{ email }}</td>
+                    </tr>
+                </tbody>
+                </table>
+            </div>
+
+            <!-- 入力項目(編集用) -->
+            <table class="order-table-edit">
+            <colgroup>
+                <col style="width:5%">
+                <col style="width:34%">
+                <col style="width:7%">
+                <col style="width:7%">
+                <col style="width:9%">
+                <col style="width:9%">
+                <col style="width:18%">
+                <col style="width:4%">
+                <col style="width:7%">
+            </colgroup>
+            <thead>
+                <tr>
+                <th>No.</th>
+                <th>鋼材</th>
+                <th>寸法</th>
+                <th>数量</th>
+                <th>重量(1本)</th>
+                <th>重量(本数)</th>
+                <th>備考</th>
+                <th>修正</th>
+                <th class="no-print">削除</th>
+                </tr>
+            </thead>
+            <tbody id="order_table_body_edit"></tbody>
+            </table>
+
+            <!-- 印刷用テーブル本体 -->
+            <table class="order-table order-table-print">
+                <thead>
+                <tr>
+                    <th>No.</th><th>鋼材</th><th>寸法</th><th>数量</th>
+                    <th>重量(1本)</th><th>重量(本数)</th><th>備考</th><th>修正</th>
+                </tr>
+                </thead>
+                <tbody id="order_table_body_print">
+                {% for row in rows %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ row.steel_name }}</td>
+                    <td>{{ row.size }}</td>
+                    <td>{{ row.quantity }}</td>
+                    <td>{{ row.unit_weight }}</td>
+                    <td>{{ row.total_weight }}</td>
+                    <td>{{ row.remarks }}</td>
+                    <td>{{ row.corrections }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+
+        </div>
+
+    </form>
+
+    {% if project_name %}
+        <h2 class="no-print">入力内容の確認</h2>
+        <ul class="no-print">
+            <li>物件名: {{ project_name }}</li>
+            <li>発注日: {{ order_date }}</li>
+            <li>希望納期: {{ delivery_date }}</li>
+            <li>担当: {{ chief_date }}</li>
+            <li>社名: {{ company_name }}</li>
+            <li>TEL: {{ tel }}</li>
+            <li>FAX: {{ fax }}</li>
+            <li>E-mail: {{ email }}</li>
+        </ul>
+    {% endif %}
+
+	<p><a class="no-print" href="{{ url_for('home') }}">← ホームに戻る</a></p>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", () => {
+        // 自動補完を無効化
+        document.querySelectorAll("input").forEach(input => {
+            input.setAttribute("autocomplete", "off");
+        });
+    });
+    </script>
+
+    <script id="__STEEL_DATA__">
+        window.__STEEL_DATA__ = {{ steel_data | tojson | safe }};
+    </script>
+    <!-- ② 外部JSを読み込み -->
+    <script src="{{ url_for('static', filename='js/steel_materials_order_app.js') }}" defer></script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!-- templates/slides_embed.html -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>説明スライド | {{ index }} / {{ total or "?" }}</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { margin:0; font:14px/1.5 system-ui; color:#222; }
+    header { position:sticky; top:0; background:#fff; border-bottom:1px solid #ddd;
+             padding:8px 12px; display:flex; gap:8px; align-items:center; z-index:10; }
+    header a, header button { padding:6px 10px; border:1px solid #ddd; border-radius:8px;
+                              background:#f7f7f7; text-decoration:none; color:#333; }
+    header .spacer { flex:1; }
+    main { height:calc(100svh - 52px); }
+    iframe { width:100%; height:100%; border:0; background:#000; }
+    input[type="number"] { width:5em; padding:6px; }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="{{ url_for('home') }}">← Home</a>
+    <button id="prev">◀ 前へ</button>
+    <form id="jump" action="{{ url_for('slides', index=1) }}" method="get"
+          onsubmit="event.preventDefault(); goTo();">
+      <label>ページ:
+        <input id="idx" type="number" min="1" value="{{ index }}">
+      </label>
+      <button type="submit">移動</button>
+      {% if total %}<span>/ {{ total }}</span>{% endif %}
+    </form>
+    <button id="next">次へ ▶</button>
+    <span class="spacer"></span>
+    <a href="{{ ppt_embed_base }}&wdSlideIndex={{ index }}" target="_blank" rel="noopener">別タブで開く</a>
+  </header>
+
+  <main>
+    <iframe id="deck"
+      src="{{ ppt_embed_base }}&wdSlideIndex={{ index }}"
+      allowfullscreen></iframe>
+  </main>
+
+  <script>
+    const total = {{ (total or 0) | tojson }};
+    const idxInput = document.getElementById('idx');
+    const deck = document.getElementById('deck');
+
+    function setIndex(n){
+      n = parseInt(n || 1, 10);
+      if (total && (n < 1 || n > total)) return;
+      const u = new URL(deck.src);
+      u.searchParams.set('wdSlideIndex', String(n));
+      deck.src = u.toString();
+      history.replaceState(null, '', `/slides/${n}`);
+      idxInput.value = String(n);
+    }
+    function goTo(){ setIndex(idxInput.value); }
+    document.getElementById('prev').onclick = () => setIndex((+idxInput.value || 1) - 1);
+    document.getElementById('next').onclick = () => setIndex((+idxInput.value || 1) + 1);
+    window.addEventListener('keydown', e => {
+      if (e.key === 'ArrowLeft')  setIndex((+idxInput.value || 1) - 1);
+      if (e.key === 'ArrowRight') setIndex((+idxInput.value || 1) + 1);
+    });
+  </script>
+</body>
+</html>

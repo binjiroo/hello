@@ -1,0 +1,630 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>鉄骨建築用見積書作成アプリ</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    .ed-wrap { max-width: 1200px; margin: 0 auto; padding: 12px; box-sizing: border-box; }
+    .ed-card { border: 1px solid #000; padding: 10px; margin-bottom: 10px; }
+    .ed-row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 6px; }
+    .ed-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    .ed-table { width: 100%; border-collapse: collapse; }
+    .ed-table th, .ed-table td { border: 1px solid #000; padding: 4px; text-align: center; }
+    .ed-table td input, .ed-table td select { width: 100%; box-sizing: border-box; }
+    .ed-right { display: flex; justify-content: flex-end; gap: 8px; }
+    .ed-action-bar { flex-wrap: wrap; align-items: center; }
+    .ed-action-bar > * { white-space: nowrap; }
+    .ed-print-head { display: grid; grid-template-columns: 1.1fr 1fr; gap: 14px; align-items: start; }
+    .ed-doc-title { text-align:center; margin:0 0 10px; font-size: 2.1rem; font-weight: 700; line-height: 1.2; }
+    .ed-customer-name { margin-bottom: 8px; line-height: 1.3; }
+    .ed-customer-name-main { font-size: 1.6rem; font-weight: 700; }
+    .ed-customer-honorific { font-size: 1rem; font-weight: 400; }
+    .ed-customer-name { border-bottom: 3px double #000; padding-bottom: 4px; }
+    .ed-print-box { border: 1px solid #000; }
+    .ed-print-box-row { display: grid; grid-template-columns: 120px 1fr; border-bottom: 1px solid #000; }
+    .ed-print-box-row:last-child { border-bottom: none; }
+    .ed-print-box-label, .ed-print-box-value { padding: 5px 8px; }
+    .ed-print-box-label { border-right: 1px solid #000; font-weight: 600; }
+    .ed-print-subject-block { padding: 4px 2px; }
+    .ed-print-subject-label { font-weight: 600; line-height: 1.2; margin-bottom: 6px; }
+    .ed-print-subject-value { min-height: 1.6em; border-bottom: 1px solid #000; line-height: 1.4; font-size: 1.5rem; font-weight: 600; }
+    .ed-print-greeting { font-size: 0.85rem; line-height: 1.2; margin: 0 0 6px; }
+    .ed-print-total-box { border: 1px solid #000; margin-top: 8px; width: 100%; box-sizing: border-box; }
+    .ed-print-total-row { display: grid; grid-template-columns: 64px 1fr; }
+    .ed-print-total-label, .ed-print-total-value { padding: 8px 10px; }
+    .ed-print-total-label { border-right: 1px solid #000; font-weight: 600; }
+    .ed-print-right-row { display: grid; grid-template-columns: 120px 1fr; margin-bottom: 4px; }
+    .ed-print-right-label { font-weight: 600; }
+    .ed-print-right-wrap { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+    .ed-print-right-group { border: 1px solid #000; min-width: 360px; max-width: 100%; margin-left: auto; }
+    .ed-print-right-group .ed-print-right-row { margin-bottom: 0; border-bottom: 1px solid #000; }
+    .ed-print-right-group .ed-print-right-row:last-child { border-bottom: none; }
+    .ed-print-right-group .ed-print-right-label { border-right: 1px solid #000; padding: 5px 8px; }
+    .ed-print-right-group .ed-print-right-value { padding: 5px 8px; }
+    .ed-print-right-group-compact { min-width: 0; width: auto; }
+    .ed-print-right-group-compact .ed-print-right-row { grid-template-columns: 92px auto; }
+
+    /* (/print)?*/
+    .ed-print-mode .no-print { display: none !important; }
+    .ed-print-mode input,
+    .ed-print-mode select,
+    .ed-print-mode textarea {
+      border: none !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      outline: none !important;
+      pointer-events: none;
+      appearance: none;
+      -webkit-appearance: none;
+      color: #000;
+      padding: 0;
+    }
+    .ed-print-mode .ed-table td input,
+    .ed-print-mode .ed-table td select {
+      text-align: center;
+    }
+    .ed-print-mode .ed-table td:first-child,
+    .ed-print-mode .ed-table th:first-child {
+      white-space: nowrap;
+    }
+    {% if doc_type == "quotation_submit" and not print_mode %}
+    #ed-lines-table th:nth-child(6),
+    #ed-lines-table th:nth-child(7),
+    #ed-lines-table td:nth-child(6),
+    #ed-lines-table td:nth-child(7) {
+      display: none;
+    }
+    {% endif %}
+    {% if doc_type == "quotation_submit" and print_mode %}
+    .ed-doc-title { font-size: 2.4rem; }
+    .ed-doc-title { border: 1px solid #000; padding: 6px 0; width: 100%; box-sizing: border-box; }
+    .ed-customer-name-main { font-size: 1.8rem; }
+    .ed-total-inline { display: inline-flex; gap: 8px; align-items: baseline; }
+    .ed-total-inline-amount { font-size: 1.8rem; font-weight: 700; line-height: 1; }
+    {% endif %}
+    {% if print_mode and paper_orientation == "landscape" and doc_type in ["quotation_submit", "quotation_internal"] %}
+    .ed-card { padding: 6px; margin-bottom: 6px; }
+    .ed-table th, .ed-table td { padding: 2px; }
+    .ed-grid-3 { gap: 6px; }
+    .ed-tax-summary-card { break-inside: avoid; page-break-inside: avoid; }
+    {% endif %}
+
+    @media print {
+      @page { size: A4 {{ "landscape" if paper_orientation == "landscape" else "portrait" }}; margin: 5mm; }
+      .no-print { display: none !important; }
+      body { margin: 0; }
+      .ed-wrap { max-width: none; padding: 0; }
+    }
+  </style>
+  <script>
+    window.MATERIAL_CONTENT_PRESETS = {{ material_content_presets_json | safe }};
+    window.ZINC_CONTENT_PRESETS = {{ zinc_content_presets_json | safe }};
+  </script>
+  <script src="{{ url_for('static', filename='js/estimate_document_app.js', v='20260227b') }}" defer></script>
+</head>
+<body class="{% if print_mode %}ed-print-mode{% else %}ed-edit-mode{% endif %}" data-auto-print="{{ '1' if auto_print else '0' }}">
+  <div class="ed-wrap">
+    {% if not print_mode %}<h1>鉄骨建築用見積書作成アプリ</h1>{% endif %}
+
+    <form method="POST" id="ed-form" novalidate>
+      <div class="ed-card no-print">
+        <div class="ed-row">
+          <label for="ed-doc-type">作成書類</label>
+          <select id="ed-doc-type" name="doc_type">
+            {% for key, label in doc_types %}
+            <option value="{{ key }}" {% if key == doc_type %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <label for="ed-paper-orientation">用紙方向</label>
+          <select id="ed-paper-orientation" name="paper_orientation">
+            <option value="portrait" {% if paper_orientation == "portrait" %}selected{% endif %}>縦</option>
+            <option value="landscape" {% if paper_orientation == "landscape" %}selected{% endif %}>横</option>
+          </select>
+          <button type="submit">選択した書類を表示</button>
+        </div>
+      </div>
+
+      {% if print_mode %}
+      {% if doc_type in ["quotation_submit", "quotation_internal"] %}
+      <div class="ed-card">
+        <h2 class="ed-doc-title">
+          {% if doc_type == "quotation_submit" %}見積書{% else %}{{ current_doc_label }}{% endif %}
+        </h2>
+        <div class="ed-print-head">
+          <div>
+            <div class="ed-customer-name"><span class="ed-customer-name-main">{{ customer_name }}</span> <span class="ed-customer-honorific">{{ customer_honorific }}</span></div>
+            {% if doc_type == "quotation_submit" %}
+            <div class="ed-print-greeting">以下の通り、見積り申し上げます</div>
+            {% endif %}
+            <div class="ed-print-box">
+              <div class="ed-print-box-row">
+                <div class="ed-print-box-label">件名</div>
+                <div class="ed-print-box-value">{{ subject }}</div>
+              </div>
+              <div class="ed-print-box-row">
+                <div class="ed-print-box-label">納期</div>
+                <div class="ed-print-box-value">{{ delivery_due_ja }}</div>
+              </div>
+              <div class="ed-print-box-row">
+                <div class="ed-print-box-label">有効期限</div>
+                <div class="ed-print-box-value">{{ valid_until_ja }}</div>
+              </div>
+              <div class="ed-print-box-row">
+                <div class="ed-print-box-label">支払条件</div>
+                <div class="ed-print-box-value">{{ payment_terms }}</div>
+              </div>
+            </div>
+            {% if doc_type == "quotation_submit" %}
+            <div class="ed-print-total-box">
+              <div class="ed-print-total-row">
+                <div class="ed-print-total-label">合計</div>
+                <div class="ed-print-total-value">
+                  <span class="ed-total-inline">
+                    <span class="ed-total-inline-amount">¥{{ total_fmt }}</span>
+                    <span>税込</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+          <div class="ed-print-right-wrap">
+            <div class="ed-print-right-group ed-print-right-group-compact">
+              <div class="ed-print-right-row"><div class="ed-print-right-label">見積番号</div><div class="ed-print-right-value">{{ estimate_no }}</div></div>
+              <div class="ed-print-right-row"><div class="ed-print-right-label">見積日</div><div class="ed-print-right-value">{{ estimate_date_ja }}</div></div>
+            </div>
+            <div class="ed-print-right-group">
+              <div class="ed-print-right-row"><div class="ed-print-right-label">会社名</div><div class="ed-print-right-value">{{ company_name }}</div></div>
+              <div class="ed-print-right-row"><div class="ed-print-right-label">郵便番号</div><div class="ed-print-right-value">{{ postal_code }}</div></div>
+              <div class="ed-print-right-row"><div class="ed-print-right-label">住所</div><div class="ed-print-right-value">{{ address }}</div></div>
+              <div class="ed-print-right-row"><div class="ed-print-right-label">TEL</div><div class="ed-print-right-value">{{ phone }}</div></div>
+              <div class="ed-print-right-row"><div class="ed-print-right-label">FAX</div><div class="ed-print-right-value">{{ fax }}</div></div>
+              <div class="ed-print-right-row"><div class="ed-print-right-label">e-mail</div><div class="ed-print-right-value">{{ email }}</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ed-card">
+        <table class="ed-table">
+          <thead><tr><th>No.</th><th>内容</th><th>数量</th><th>単位</th><th>単価</th>{% if doc_type != "quotation_submit" %}<th>値引</th><th>税率</th>{% endif %}<th>合計</th></tr></thead><tbody>{% for line in print_lines %}
+            <tr><td>{{ line.no }}</td><td>{{ line.description }}</td><td>{{ line.quantity }}</td><td>{{ line.unit }}</td><td>{{ line.unit_price }}</td>{% if doc_type != "quotation_submit" %}<td>{{ line.discount }}</td><td>{{ line.tax_rate }}%</td>{% endif %}<td>{{ line.line_total }}</td></tr>
+            {% endfor %}
+            {% if doc_type == "quotation_submit" %}
+            {% for _ in range(blank_print_rows) %}<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>{% endfor %}
+            {% else %}
+            {% for _ in range(blank_print_rows) %}<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>{% endfor %}
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+      <div class="ed-card ed-tax-summary-card">
+        <div class="ed-grid-3">
+          <div>税率別内訳:10%対象 {{ taxable_10_fmt }}</div>
+          <div>税率別内訳:軽減8%対象 {{ taxable_8_fmt }}</div>
+          <div>税率別内訳:0%対象 {{ taxable_0_fmt }}</div>
+          <div>税抜金額 {{ tax_excluded_amount_fmt }}</div>
+          <div>消費税 {{ consumption_tax_fmt }}</div>
+          <div><strong>合計 {{ total_fmt }}</strong></div>
+        </div>
+      </div>
+      {% elif doc_type in ["detail_submit", "detail_internal"] %}
+      <div class="ed-card">
+        <h2 class="ed-doc-title">
+          {% if doc_type == "detail_submit" %}見積明細書{% else %}{{ current_doc_label }}{% endif %}
+        </h2>
+        <div class="ed-print-head">
+          <div class="ed-print-subject-block">
+            <div class="ed-print-subject-label">件名</div>
+            <div class="ed-print-subject-value">{{ subject }}</div>
+          </div>
+          <div class="ed-print-right-wrap">
+            <div class="ed-print-right-group ed-print-right-group-compact">
+              <div class="ed-print-right-row"><div class="ed-print-right-label">見積番号</div><div class="ed-print-right-value">{{ estimate_no }}</div></div>
+              <div class="ed-print-right-row"><div class="ed-print-right-label">見積日</div><div class="ed-print-right-value">{{ estimate_date_ja }}</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ed-card">
+        <table class="ed-table">
+          <thead><tr><th>No.</th><th>内容</th><th>数量</th><th>単位</th><th>重量(kg)</th><th>単価</th><th>金額</th></tr></thead>
+          <tbody>
+            {% for line in detail_print_lines %}
+            <tr><td>{{ line.no }}</td><td>{{ line.description }}</td><td>{{ line.quantity }}</td><td>{{ line.unit }}</td><td>{{ line.weight_kg }}</td><td>{{ line.unit_price }}</td><td>{{ line.amount }}</td></tr>
+            {% endfor %}
+            {% for _ in range(detail_blank_print_rows) %}<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% set has_detail_note = detail_note_lines | select | list | length > 0 %}
+      {% if has_detail_note %}
+      <div class="ed-card">
+        <table class="ed-table">
+          <tbody>
+            {% for note in detail_note_lines %}
+            {% if note %}<tr><td style="text-align:left;">{{ note }}</td></tr>{% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+      <div class="ed-card">
+        <table class="ed-table">
+          <tbody>
+            <tr><td>小計</td><td>{{ detail_subtotal_fmt }}</td><td>調整</td><td>{{ detail_adjustment_fmt }}</td><td>合計</td><td>{{ detail_total_fmt }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+      {% elif doc_type == "material_internal" %}
+      <div class="ed-card">
+        <h2 class="ed-doc-title">材料費詳細</h2>
+        <div class="ed-print-head">
+          <div class="ed-print-subject-block">
+            <div class="ed-print-subject-label">件名</div>
+            <div class="ed-print-subject-value">{{ subject }}</div>
+          </div>
+          <div class="ed-print-right-wrap">
+            <div class="ed-print-right-group ed-print-right-group-compact">
+              <div class="ed-print-right-row"><div class="ed-print-right-label">見積番号</div><div class="ed-print-right-value">{{ estimate_no }}</div></div>
+              <div class="ed-print-right-row"><div class="ed-print-right-label">見積日</div><div class="ed-print-right-value">{{ estimate_date_ja }}</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ed-card">
+        <table class="ed-table">
+          <thead><tr><th>No.</th><th>内容</th><th>数量</th><th>単位</th><th>重量(kg)</th><th>単価</th><th>金額</th></tr></thead>
+          <tbody>
+            {% for line in material_print_lines %}
+            <tr><td>{{ line.no }}</td><td>{{ line.description }}</td><td>{{ line.quantity }}</td><td>{{ line.unit }}</td><td>{{ line.weight_kg }}</td><td>{{ line.unit_price }}</td><td>{{ line.amount }}</td></tr>
+            {% endfor %}
+            {% for _ in range(material_blank_print_rows) %}<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% set has_material_note = material_note_lines | select | list | length > 0 %}
+      {% if has_material_note %}
+      <div class="ed-card">
+        <table class="ed-table">
+          <tbody>
+            {% for note in material_note_lines %}
+            {% if note %}<tr><td style="text-align:left;">{{ note }}</td></tr>{% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+      <div class="ed-card">
+        <table class="ed-table">
+          <tbody>
+            <tr><td>小計</td><td>{{ material_subtotal_fmt }}</td><td>調整</td><td>{{ material_adjustment_fmt }}</td><td>合計</td><td>{{ material_total_fmt }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+      {% elif doc_type == "outsource_internal" %}
+      <div class="ed-card">
+        <h2 class="ed-doc-title">外注一次加工費詳細</h2>
+        <div class="ed-print-head">
+          <div class="ed-print-subject-block">
+            <div class="ed-print-subject-label">件名</div>
+            <div class="ed-print-subject-value">{{ subject }}</div>
+          </div>
+          <div class="ed-print-right-wrap">
+            <div class="ed-print-right-group ed-print-right-group-compact">
+              <div class="ed-print-right-row"><div class="ed-print-right-label">見積番号</div><div class="ed-print-right-value">{{ estimate_no }}</div></div>
+              <div class="ed-print-right-row"><div class="ed-print-right-label">見積日</div><div class="ed-print-right-value">{{ estimate_date_ja }}</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ed-card">
+        <table class="ed-table">
+          <thead><tr><th>No.</th><th>内容</th><th>数量</th><th>単位</th><th>重量(kg)</th><th>単価</th><th>金額</th></tr></thead>
+          <tbody>
+            {% for line in outsource_print_lines %}
+            <tr><td>{{ line.no }}</td><td>{{ line.description }}</td><td>{{ line.quantity }}</td><td>{{ line.unit }}</td><td>{{ line.weight_kg }}</td><td>{{ line.unit_price }}</td><td>{{ line.amount }}</td></tr>
+            {% endfor %}
+            {% for _ in range(outsource_blank_print_rows) %}<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% set has_outsource_note = outsource_note_lines | select | list | length > 0 %}
+      {% if has_outsource_note %}
+      <div class="ed-card">
+        <table class="ed-table">
+          <tbody>
+            {% for note in outsource_note_lines %}
+            {% if note %}<tr><td style="text-align:left;">{{ note }}</td></tr>{% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+      <div class="ed-card">
+        <table class="ed-table">
+          <tbody>
+            <tr><td>小計</td><td>{{ outsource_subtotal_fmt }}</td><td>調整</td><td>{{ outsource_adjustment_fmt }}</td><td>合計</td><td>{{ outsource_total_fmt }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+      {% elif doc_type == "factory_labor_internal" %}
+      <div class="ed-card">
+        <h2 class="ed-doc-title">工場加工人工詳細</h2>
+        <div class="ed-print-head">
+          <div class="ed-print-subject-block">
+            <div class="ed-print-subject-label">件名</div>
+            <div class="ed-print-subject-value">{{ subject }}</div>
+          </div>
+          <div class="ed-print-right-wrap">
+            <div class="ed-print-right-group ed-print-right-group-compact">
+              <div class="ed-print-right-row"><div class="ed-print-right-label">見積番号</div><div class="ed-print-right-value">{{ estimate_no }}</div></div>
+              <div class="ed-print-right-row"><div class="ed-print-right-label">見積日</div><div class="ed-print-right-value">{{ estimate_date_ja }}</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ed-card">
+        <table class="ed-table">
+          <thead><tr><th>No.</th><th>内容</th><th>数量</th><th>単位</th><th>時間(分)</th><th>時間(計)</th><th>人工</th></tr></thead>
+          <tbody>
+            {% for line in factory_print_lines %}
+            <tr><td>{{ line.no }}</td><td>{{ line.description }}</td><td>{{ line.quantity }}</td><td>{{ line.unit }}</td><td>{{ line.time_per_min }}</td><td>{{ line.time_total_min }}</td><td>{{ line.man_days }}</td></tr>
+            {% endfor %}
+            {% for _ in range(factory_blank_print_rows) %}<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% set has_factory_note = factory_note_lines | select | list | length > 0 %}
+      {% if has_factory_note %}
+      <div class="ed-card">
+        <table class="ed-table">
+          <tbody>
+            {% for note in factory_note_lines %}
+            {% if note %}<tr><td style="text-align:left;">{{ note }}</td></tr>{% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+      <div class="ed-card">
+        <table class="ed-table">
+          <tbody>
+            <tr><td>総分数</td><td>{{ factory_total_minutes }}</td><td>総時間</td><td>{{ factory_total_hours }}</td><td>総人工</td><td>{{ factory_total_man_days }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+      {% elif doc_type == "site_labor_internal" %}
+      <div class="ed-card">
+        <h2 class="ed-doc-title">現場作業人工詳細</h2>
+        <div class="ed-print-head">
+          <div class="ed-print-subject-block">
+            <div class="ed-print-subject-label">件名</div>
+            <div class="ed-print-subject-value">{{ subject }}</div>
+          </div>
+          <div class="ed-print-right-wrap">
+            <div class="ed-print-right-group ed-print-right-group-compact">
+              <div class="ed-print-right-row"><div class="ed-print-right-label">見積番号</div><div class="ed-print-right-value">{{ estimate_no }}</div></div>
+              <div class="ed-print-right-row"><div class="ed-print-right-label">見積日</div><div class="ed-print-right-value">{{ estimate_date_ja }}</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ed-card">
+        <table class="ed-table">
+          <thead><tr><th>No.</th><th>内容</th><th>数量</th><th>単位</th><th>時間(分)</th><th>時間(計)</th><th>人工</th></tr></thead>
+          <tbody>
+            {% for line in site_print_lines %}
+            <tr><td>{{ line.no }}</td><td>{{ line.description }}</td><td>{{ line.quantity }}</td><td>{{ line.unit }}</td><td>{{ line.time_per_min }}</td><td>{{ line.time_total_min }}</td><td>{{ line.man_days }}</td></tr>
+            {% endfor %}
+            {% for _ in range(site_blank_print_rows) %}<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% set has_site_note = site_note_lines | select | list | length > 0 %}
+      {% if has_site_note %}
+      <div class="ed-card">
+        <table class="ed-table">
+          <tbody>
+            {% for note in site_note_lines %}
+            {% if note %}<tr><td style="text-align:left;">{{ note }}</td></tr>{% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+      <div class="ed-card">
+        <table class="ed-table">
+          <tbody>
+            <tr><td>総分数</td><td>{{ site_total_minutes }}</td><td>総時間</td><td>{{ site_total_hours }}</td><td>総人工</td><td>{{ site_total_man_days }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+      {% elif doc_type == "zinc_internal" %}
+      <div class="ed-card">
+        <h2 class="ed-doc-title">亜鉛メッキ詳細</h2>
+        <div class="ed-print-head">
+          <div class="ed-print-subject-block">
+            <div class="ed-print-subject-label">件名</div>
+            <div class="ed-print-subject-value">{{ subject }}</div>
+          </div>
+          <div class="ed-print-right-wrap">
+            <div class="ed-print-right-group ed-print-right-group-compact">
+              <div class="ed-print-right-row"><div class="ed-print-right-label">見積番号</div><div class="ed-print-right-value">{{ estimate_no }}</div></div>
+              <div class="ed-print-right-row"><div class="ed-print-right-label">見積日</div><div class="ed-print-right-value">{{ estimate_date_ja }}</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ed-card">
+        <table class="ed-table">
+          <thead><tr><th>No.</th><th>内容</th><th>数量</th><th>単位</th><th>重量(kg)</th><th>単価</th><th>金額</th></tr></thead>
+          <tbody>
+            {% for line in zinc_print_lines %}
+            <tr><td>{{ line.no }}</td><td>{{ line.description }}</td><td>{{ line.quantity }}</td><td>{{ line.unit }}</td><td>{{ line.weight_kg }}</td><td>{{ line.unit_price }}</td><td>{{ line.amount }}</td></tr>
+            {% endfor %}
+            {% for _ in range(zinc_blank_print_rows) %}<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% set has_zinc_note = zinc_note_lines | select | list | length > 0 %}
+      {% if has_zinc_note %}
+      <div class="ed-card">
+        <table class="ed-table">
+          <tbody>
+            {% for note in zinc_note_lines %}
+            {% if note %}<tr><td style="text-align:left;">{{ note }}</td></tr>{% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+      <div class="ed-card">
+        <table class="ed-table">
+          <tbody>
+            <tr><td>合計</td><td>{{ zinc_total }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="ed-card"><h2 class="ed-doc-title">{{ current_doc_label }}</h2></div>
+      {% endif %}
+
+      {% elif doc_type in ["quotation_submit", "quotation_internal"] %}
+      <datalist id="ed-description-options"><option value="見積合計額(税抜)"></option></datalist>
+      <datalist id="ed-unit-options"><option value="式"></option></datalist>
+      <div class="ed-card">
+        <h2>{{ current_doc_label }}</h2>
+        <div class="ed-grid-3">
+          <div class="ed-row"><label for="ed-customer-name">取引先会社名</label><input id="ed-customer-name" name="customer_name" type="text" value="{{ customer_name }}"><select name="customer_honorific"><option value="様" {% if customer_honorific == "様" %}selected{% endif %}>様</option><option value="御中" {% if customer_honorific == "御中" %}selected{% endif %}>御中</option></select></div>
+          <div class="ed-row"><label for="ed-subject">件名</label><input id="ed-subject" name="subject" type="text" value="{{ subject }}"></div>
+          <div class="ed-row"><label for="ed-estimate-no">見積番号</label><input id="ed-estimate-no" name="estimate_no" type="text" value="{{ estimate_no }}"></div>
+          <div class="ed-row"><label for="ed-delivery-due">納期</label><input id="ed-delivery-due" name="delivery_due" type="date" value="{{ delivery_due }}"></div>
+          <div class="ed-row"><label for="ed-valid-until">有効期限</label><input id="ed-valid-until" name="valid_until" type="date" value="{{ valid_until }}"></div>
+          <div class="ed-row"><label for="ed-estimate-date">見積日</label><input id="ed-estimate-date" name="estimate_date" type="date" value="{{ estimate_date }}"></div>
+          <div class="ed-row"><label for="ed-payment-terms">支払条件</label><select id="ed-payment-terms" name="payment_terms"><option value="">選択してください</option><option value="銀行振込" {% if payment_terms == "銀行振込" %}selected{% endif %}>銀行振込</option><option value="現金支払い" {% if payment_terms == "現金支払い" %}selected{% endif %}>現金支払い</option></select></div>
+        </div>
+      </div>
+      <div class="ed-card">
+        <h3>自社情報</h3><div class="ed-grid-3"><div class="ed-row"><label for="ed-company-name">会社名</label><input id="ed-company-name" name="company_name" type="text" value="{{ company_name }}"></div>
+          <div class="ed-row"><label for="ed-postal">郵便番号</label><input id="ed-postal" name="postal_code" type="text" value="{{ postal_code }}"></div>
+          <div class="ed-row"><label for="ed-address">住所</label><input id="ed-address" name="address" type="text" value="{{ address }}"></div>
+          <div class="ed-row"><label for="ed-phone">TEL</label><input id="ed-phone" name="phone" type="text" value="{{ phone }}"></div>
+          <div class="ed-row"><label for="ed-fax">FAX</label><input id="ed-fax" name="fax" type="text" value="{{ fax }}"></div>
+          <div class="ed-row"><label for="ed-email">E-mail</label><input id="ed-email" name="email" type="email" value="{{ email }}"></div>
+        </div>
+      </div>
+      <div class="ed-card">
+        <h3>明細</h3>
+        <div class="ed-row no-print" style="justify-content:flex-end;">
+          <label>内容に追加:<input type="checkbox" id="ed-check-add-description">見積合計額(税抜)</label>
+          <label>単位に追加:<input type="checkbox" id="ed-check-add-unit">式</label>
+          <label><input type="checkbox" id="ed-link-detail-submit"> 見積明細書(提出用)と紐づけ</label>
+        </div>
+        <table class="ed-table" id="ed-lines-table">
+          <thead><tr><th>No.</th><th>内容</th><th>数量</th><th>単位</th><th>単価</th><th>値引</th><th>税率</th><th>合計</th>{% if not print_mode %}<th>操作</th>{% endif %}</tr></thead>
+          <tbody id="ed-lines-body">{% for line in lines %}<tr><td>{{ loop.index }}</td><td><input type="text" name="description[]" list="ed-description-options" value="{{ line.description }}"></td><td><input type="number" step="0.001" min="0" name="quantity[]" value="{{ line.quantity }}"></td><td><input type="text" name="unit[]" list="ed-unit-options" value="{{ line.unit }}"></td><td><input type="number" step="1" min="0" name="unit_price[]" value="{{ line.unit_price }}"></td><td><input type="number" step="1" min="0" name="discount[]" value="{{ line.discount }}"></td><td><select name="tax_rate[]"><option value="10" {% if line.tax_rate == "10" %}selected{% endif %}>10%</option><option value="8" {% if line.tax_rate == "8" %}selected{% endif %}>8%</option><option value="0" {% if line.tax_rate == "0" %}selected{% endif %}>0%</option></select></td><td><input type="number" step="1" min="0" name="line_total[]" value="{{ line.line_total }}" readonly></td>{% if not print_mode %}<td><button type="button" class="ed-delete-row">削除</button></td>{% endif %}</tr>{% endfor %}</tbody>
+        </table>
+        <div class="ed-right no-print" style="margin-top:8px;"><button type="button" id="ed-add-row-btn">行追加</button></div>
+      </div>
+      <div class="ed-card">
+        <h3>税率別内訳・合計</h3>
+        <div class="ed-grid-3">
+          <div class="ed-row"><label for="ed-taxable-10">10%対象</label><input id="ed-taxable-10" name="taxable_10" value="{{ taxable_10 }}" readonly></div>
+          <div class="ed-row"><label for="ed-taxable-8">軽減8%対象</label><input id="ed-taxable-8" name="taxable_8" value="{{ taxable_8 }}" readonly></div>
+          <div class="ed-row"><label for="ed-taxable-0">0%対象</label><input id="ed-taxable-0" name="taxable_0" value="{{ taxable_0 }}" readonly></div>
+          <div class="ed-row"><label for="ed-tax-excluded">税抜金額</label><input id="ed-tax-excluded" name="tax_excluded_amount" value="{{ tax_excluded_amount }}" readonly></div>
+          <div class="ed-row"><label for="ed-tax">消費税</label><input id="ed-tax" name="consumption_tax" value="{{ consumption_tax }}" readonly></div>
+          <div class="ed-row"><label for="ed-subtotal">小計</label><input id="ed-subtotal" name="subtotal" value="{{ subtotal }}" readonly></div>
+          <div class="ed-row"><label for="ed-tax-again">消費税</label><input id="ed-tax-again" value="{{ consumption_tax }}" readonly></div>
+          <div class="ed-row"><label for="ed-total">合計</label><input id="ed-total" name="total" value="{{ total }}" readonly></div>
+        </div>
+      </div>
+
+      {% elif doc_type in ["detail_submit", "detail_internal"] %}
+      <datalist id="dd-description-options">{% for opt in detail_content_options %}<option value="{{ opt }}"></option>{% endfor %}</datalist>
+      <datalist id="dd-unit-options">{% for opt in detail_unit_options %}<option value="{{ opt }}"></option>{% endfor %}</datalist>
+      <div class="ed-card"><h2>{{ current_doc_label }}</h2><div class="ed-row"><label for="dd-subject">件名</label><input id="dd-subject" name="subject" type="text" value="{{ subject }}"></div><div class="ed-row"><label for="dd-estimate-no">見積番号</label><input id="dd-estimate-no" name="estimate_no" type="text" value="{{ estimate_no }}"></div><div class="ed-row"><label for="dd-estimate-date">見積日</label><input id="dd-estimate-date" name="estimate_date" type="date" value="{{ estimate_date }}"></div></div>
+      <div class="ed-card">
+        <div class="ed-row no-print" style="justify-content:flex-end;"><label><input type="checkbox" id="dd-link-material" name="detail_link_material"> 材料費詳細(社内用)と紐づけ</label><label><input type="checkbox" id="dd-link-outsource" name="detail_link_outsource"> 外注一次加工費詳細(社内用)と紐づけ</label><label><input type="checkbox" id="dd-link-factory" name="detail_link_factory"> 工場加工人工詳細(社内用)と紐づけ</label><label><input type="checkbox" id="dd-link-site" name="detail_link_site"> 現場作業人工詳細(社内用)と紐づけ</label><label><input type="checkbox" id="dd-link-zinc" name="detail_link_zinc"> 亜鉛メッキ詳細(社内用)と紐づけ</label></div>
+        <div class="ed-row no-print" style="justify-content:flex-end;"><label for="dd-add-description-select">内容(ドロップダウン)追加</label><select id="dd-add-description-select"><option value="">選択してください</option>{% for opt in detail_content_options %}<option value="{{ opt }}">{{ opt }}</option>{% endfor %}</select>{% for opt in detail_content_options %}<label><input type="checkbox" class="dd-content-check" value="{{ opt }}">{{ opt }}</label>{% endfor %}</div>
+        <div class="ed-row no-print" style="justify-content:flex-end;"><label for="dd-add-unit-select">単位(ドロップダウン)追加</label><select id="dd-add-unit-select"><option value="">選択してください</option>{% for opt in detail_unit_options %}<option value="{{ opt }}">{{ opt }}</option>{% endfor %}</select>{% for opt in detail_unit_options %}<label><input type="checkbox" class="dd-unit-check" value="{{ opt }}">{{ opt }}</label>{% endfor %}</div>
+        <table class="ed-table" id="dd-lines-table"><thead><tr><th>No.</th><th>内容</th><th>数量</th><th>単位</th><th>重量(kg)</th><th>単価</th><th>金額</th>{% if not print_mode %}<th>操作</th>{% endif %}</tr></thead><tbody id="dd-lines-body">{% for line in detail_lines %}<tr><td>{{ loop.index }}</td><td><input type="text" name="detail_description[]" list="dd-description-options" value="{{ line.description }}"></td><td><input type="number" step="0.001" min="0" name="detail_quantity[]" value="{{ line.quantity }}"></td><td><input type="text" name="detail_unit[]" list="dd-unit-options" value="{{ line.unit }}"></td><td><input type="number" step="0.001" min="0" name="detail_weight_kg[]" value="{{ line.weight_kg }}"></td><td><input type="number" step="1" min="0" name="detail_unit_price[]" value="{{ line.unit_price }}"></td><td><input type="number" step="1" min="0" name="detail_amount[]" value="{{ line.amount }}" readonly></td>{% if not print_mode %}<td><button type="button" class="dd-delete-row">削除</button></td>{% endif %}</tr>{% endfor %}</tbody></table>
+        <div class="ed-right no-print" style="margin-top:8px;"><button type="button" id="dd-add-row-btn">行追加</button></div>
+      </div>
+      <div class="ed-card ed-note-card" data-note-prefix="detail"><h3>説明・備考</h3>{% for note in detail_note_lines %}<div class="ed-row ed-note-row"><label>備考</label><input type="text" name="detail_note_{{ loop.index }}" value="{{ note }}" style="min-width:70%;"><button type="button" class="ed-note-delete-row">削除</button></div>{% endfor %}<div class="ed-right no-print" style="margin-top:8px;"><button type="button" class="ed-note-add-row">行追加</button></div></div>
+      <div class="ed-card"><h3>金額集計</h3><div class="ed-grid-3"><div class="ed-row"><label for="dd-subtotal">小計</label><input id="dd-subtotal" name="detail_subtotal" value="{{ detail_subtotal }}" readonly></div><div class="ed-row"><label for="dd-adjustment">調整</label><input id="dd-adjustment" name="detail_adjustment" type="number" step="1" value="{{ detail_adjustment }}"></div><div class="ed-row"><label for="dd-total">合計</label><input id="dd-total" name="detail_total" value="{{ detail_total }}" readonly></div></div></div>
+
+      {% elif doc_type == "material_internal" %}
+      <datalist id="md-description-options"></datalist>
+      <datalist id="md-unit-options">{% for opt in material_unit_options %}<option value="{{ opt }}"></option>{% endfor %}</datalist>
+      <div class="ed-card"><h2>{{ current_doc_label }}</h2><div class="ed-row"><label for="md-subject">件名</label><input id="md-subject" name="subject" type="text" value="{{ subject }}"></div><div class="ed-row"><label for="md-estimate-no">見積番号</label><input id="md-estimate-no" name="estimate_no" type="text" value="{{ estimate_no }}"></div><div class="ed-row"><label for="md-estimate-date">見積日</label><input id="md-estimate-date" name="estimate_date" type="date" value="{{ estimate_date }}"></div></div>
+      <div class="ed-card"><h3>材料費明細</h3><div class="ed-row no-print" style="justify-content:flex-end;"><label for="md-content-source-select">内容グループ</label><select id="md-content-source-select">{% for key, values in material_content_presets.items() %}<option value="{{ key }}">{{ key }}</option>{% endfor %}</select><label for="md-add-description-select">内容(ドロップダウン)追加</label><select id="md-add-description-select"><option value="">選択してください</option></select></div><div class="ed-row no-print" id="md-content-checkboxes" style="justify-content:flex-end;"></div><div class="ed-row no-print" style="justify-content:flex-end;"><label for="md-add-unit-select">単位(ドロップダウン)追加</label><select id="md-add-unit-select"><option value="">選択してください</option>{% for opt in material_unit_options %}<option value="{{ opt }}">{{ opt }}</option>{% endfor %}</select>{% for opt in material_unit_options %}<label><input type="checkbox" class="md-unit-check" value="{{ opt }}">{{ opt }}</label>{% endfor %}</div><table class="ed-table" id="md-lines-table"><thead><tr><th>No.</th><th>内容</th><th>数量</th><th>単位</th><th>重量(kg)</th><th>単価</th><th>金額</th>{% if not print_mode %}<th>操作</th>{% endif %}</tr></thead><tbody id="md-lines-body">{% for line in material_lines %}<tr><td>{{ loop.index }}</td><td><input type="text" name="material_description[]" list="md-description-options" value="{{ line.description }}"></td><td><input type="number" step="0.001" min="0" name="material_quantity[]" value="{{ line.quantity }}"></td><td><input type="text" name="material_unit[]" list="md-unit-options" value="{{ line.unit }}"></td><td><input type="number" step="0.001" min="0" name="material_weight_kg[]" value="{{ line.weight_kg }}"></td><td><input type="number" step="1" min="0" name="material_unit_price[]" value="{{ line.unit_price }}"></td><td><input type="number" step="1" min="0" name="material_amount[]" value="{{ line.amount }}" readonly></td>{% if not print_mode %}<td><button type="button" class="md-delete-row">削除</button></td>{% endif %}</tr>{% endfor %}</tbody></table><div class="ed-right no-print" style="margin-top:8px;"><button type="button" id="md-add-row-btn">行追加</button></div></div>
+      <div class="ed-card ed-note-card" data-note-prefix="material"><h3>説明・備考</h3>{% for note in material_note_lines %}<div class="ed-row ed-note-row"><label>備考</label><input type="text" name="material_note_{{ loop.index }}" value="{{ note }}" style="min-width:70%;"><button type="button" class="ed-note-delete-row">削除</button></div>{% endfor %}<div class="ed-right no-print" style="margin-top:8px;"><button type="button" class="ed-note-add-row">行追加</button></div></div>
+      <div class="ed-card"><h3>金額集計</h3><div class="ed-grid-3"><div class="ed-row"><label for="md-subtotal">小計</label><input id="md-subtotal" name="material_subtotal" value="{{ material_subtotal }}" readonly></div><div class="ed-row"><label for="md-adjustment">調整</label><input id="md-adjustment" name="material_adjustment" type="number" step="1" value="{{ material_adjustment }}"></div><div class="ed-row"><label for="md-total">合計</label><input id="md-total" name="material_total" value="{{ material_total }}" readonly></div></div></div>
+
+      {% elif doc_type == "outsource_internal" %}
+      <datalist id="os-description-options">{% for opt in outsource_content_options %}<option value="{{ opt }}"></option>{% endfor %}</datalist>
+      <datalist id="os-unit-options">{% for opt in outsource_unit_options %}<option value="{{ opt }}"></option>{% endfor %}</datalist>
+      <div class="ed-card"><h2>{{ current_doc_label }}</h2><div class="ed-row"><label for="os-subject">件名</label><input id="os-subject" name="subject" type="text" value="{{ subject }}"></div><div class="ed-row"><label for="os-estimate-no">見積番号</label><input id="os-estimate-no" name="estimate_no" type="text" value="{{ estimate_no }}"></div><div class="ed-row"><label for="os-estimate-date">見積日</label><input id="os-estimate-date" name="estimate_date" type="date" value="{{ estimate_date }}"></div></div>
+      <div class="ed-card"><h3>外注一次加工費明細</h3><div class="ed-row no-print" style="justify-content:flex-end;"><label for="os-add-description-select">内容(ドロップダウン)追加</label><select id="os-add-description-select"><option value="">選択してください</option>{% for opt in outsource_content_options %}<option value="{{ opt }}">{{ opt }}</option>{% endfor %}</select></div><div class="ed-row no-print" id="os-content-checkboxes" style="justify-content:flex-end;">{% for opt in outsource_content_options %}<label><input type="checkbox" class="os-content-check" value="{{ opt }}">{{ opt }}</label>{% endfor %}</div><div class="ed-row no-print" style="justify-content:flex-end;"><label for="os-add-unit-select">単位(ドロップダウン)追加</label><select id="os-add-unit-select"><option value="">選択してください</option>{% for opt in outsource_unit_options %}<option value="{{ opt }}">{{ opt }}</option>{% endfor %}</select>{% for opt in outsource_unit_options %}<label><input type="checkbox" class="os-unit-check" value="{{ opt }}">{{ opt }}</label>{% endfor %}</div><table class="ed-table" id="os-lines-table"><thead><tr><th>No.</th><th>内容</th><th>数量</th><th>単位</th><th>重量(kg)</th><th>単価</th><th>金額</th>{% if not print_mode %}<th>操作</th>{% endif %}</tr></thead><tbody id="os-lines-body">{% for line in outsource_lines %}<tr><td>{{ loop.index }}</td><td><input type="text" name="outsource_description[]" list="os-description-options" value="{{ line.description }}"></td><td><input type="number" step="0.001" min="0" name="outsource_quantity[]" value="{{ line.quantity }}"></td><td><input type="text" name="outsource_unit[]" list="os-unit-options" value="{{ line.unit }}"></td><td><input type="number" step="0.001" min="0" name="outsource_weight_kg[]" value="{{ line.weight_kg }}"></td><td><input type="number" step="1" min="0" name="outsource_unit_price[]" value="{{ line.unit_price }}"></td><td><input type="number" step="1" min="0" name="outsource_amount[]" value="{{ line.amount }}" readonly></td>{% if not print_mode %}<td><button type="button" class="os-delete-row">削除</button></td>{% endif %}</tr>{% endfor %}</tbody></table><div class="ed-right no-print" style="margin-top:8px;"><button type="button" id="os-add-row-btn">行追加</button></div></div>
+      <div class="ed-card ed-note-card" data-note-prefix="outsource"><h3>説明・備考</h3>{% for note in outsource_note_lines %}<div class="ed-row ed-note-row"><label>備考</label><input type="text" name="outsource_note_{{ loop.index }}" value="{{ note }}" style="min-width:70%;"><button type="button" class="ed-note-delete-row">削除</button></div>{% endfor %}<div class="ed-right no-print" style="margin-top:8px;"><button type="button" class="ed-note-add-row">行追加</button></div></div>
+      <div class="ed-card"><h3>金額集計</h3><div class="ed-grid-3"><div class="ed-row"><label for="os-subtotal">小計</label><input id="os-subtotal" name="outsource_subtotal" value="{{ outsource_subtotal }}" readonly></div><div class="ed-row"><label for="os-adjustment">調整</label><input id="os-adjustment" name="outsource_adjustment" type="number" step="1" value="{{ outsource_adjustment }}"></div><div class="ed-row"><label for="os-total">合計</label><input id="os-total" name="outsource_total" value="{{ outsource_total }}" readonly></div></div></div>
+
+      {% elif doc_type == "factory_labor_internal" %}
+      <datalist id="fl-description-options">{% for opt in factory_content_options %}<option value="{{ opt }}"></option>{% endfor %}</datalist>
+      <datalist id="fl-unit-options">{% for opt in factory_unit_options %}<option value="{{ opt }}"></option>{% endfor %}</datalist>
+      <div class="ed-card"><h2>{{ current_doc_label }}</h2><div class="ed-row"><label for="fl-subject">件名</label><input id="fl-subject" name="subject" type="text" value="{{ subject }}"></div><div class="ed-row"><label for="fl-estimate-no">見積番号</label><input id="fl-estimate-no" name="estimate_no" type="text" value="{{ estimate_no }}"></div><div class="ed-row"><label for="fl-estimate-date">見積日</label><input id="fl-estimate-date" name="estimate_date" type="date" value="{{ estimate_date }}"></div></div>
+      <div class="ed-card"><h3>工場加工人工明細</h3><div class="ed-row no-print" style="justify-content:flex-end;"><label for="fl-add-description-select">内容(ドロップダウン)追加</label><select id="fl-add-description-select"><option value="">選択してください</option>{% for opt in factory_content_options %}<option value="{{ opt }}">{{ opt }}</option>{% endfor %}</select>{% for opt in factory_content_options %}<label><input type="checkbox" class="fl-content-check" value="{{ opt }}">{{ opt }}</label>{% endfor %}</div><div class="ed-row no-print" style="justify-content:flex-end;"><label for="fl-add-unit-select">単位(ドロップダウン)追加</label><select id="fl-add-unit-select"><option value="">選択してください</option>{% for opt in factory_unit_options %}<option value="{{ opt }}">{{ opt }}</option>{% endfor %}</select>{% for opt in factory_unit_options %}<label><input type="checkbox" class="fl-unit-check" value="{{ opt }}">{{ opt }}</label>{% endfor %}</div><table class="ed-table" id="fl-lines-table"><thead><tr><th>No.</th><th>内容</th><th>数量</th><th>単位</th><th>時間(分)</th><th>単価</th><th>人工</th>{% if not print_mode %}<th>操作</th>{% endif %}</tr></thead><tbody id="fl-lines-body">{% for line in factory_lines %}<tr><td>{{ loop.index }}</td><td><input type="text" name="factory_description[]" list="fl-description-options" value="{{ line.description }}"></td><td><input type="number" step="0.001" min="0" name="factory_quantity[]" value="{{ line.quantity }}"></td><td><input type="text" name="factory_unit[]" list="fl-unit-options" value="{{ line.unit }}"></td><td><input type="number" step="0.1" min="0" name="factory_time_per_min[]" value="{{ line.time_per_min }}"></td><td><input type="number" step="1" min="0" name="factory_time_total_min[]" value="{{ line.time_total_min }}" readonly></td><td><input type="number" step="0.01" min="0" name="factory_man_days[]" value="{{ line.man_days }}" readonly></td>{% if not print_mode %}<td><button type="button" class="fl-delete-row">削除</button></td>{% endif %}</tr>{% endfor %}</tbody></table><div class="ed-right no-print" style="margin-top:8px;"><button type="button" id="fl-add-row-btn">行追加</button></div></div>
+      <div class="ed-card ed-note-card" data-note-prefix="factory"><h3>説明・備考</h3>{% for note in factory_note_lines %}<div class="ed-row ed-note-row"><label>備考</label><input type="text" name="factory_note_{{ loop.index }}" value="{{ note }}" style="min-width:70%;"><button type="button" class="ed-note-delete-row">削除</button></div>{% endfor %}<div class="ed-right no-print" style="margin-top:8px;"><button type="button" class="ed-note-add-row">行追加</button></div></div>
+      <div class="ed-card"><h3>人工集計</h3><div class="ed-grid-3"><div class="ed-row"><label for="fl-total-minutes">総分数</label><input id="fl-total-minutes" name="factory_total_minutes" value="{{ factory_total_minutes }}" readonly></div><div class="ed-row"><label for="fl-total-hours">総時間</label><input id="fl-total-hours" name="factory_total_hours" value="{{ factory_total_hours }}" readonly></div><div class="ed-row"><label for="fl-total-man-days">総人工</label><input id="fl-total-man-days" name="factory_total_man_days" value="{{ factory_total_man_days }}" readonly></div></div></div>
+
+      {% elif doc_type == "site_labor_internal" %}
+      <datalist id="sl-description-options">{% for opt in site_content_options %}<option value="{{ opt }}"></option>{% endfor %}</datalist>
+      <datalist id="sl-unit-options">{% for opt in site_unit_options %}<option value="{{ opt }}"></option>{% endfor %}</datalist>
+      <div class="ed-card"><h2>{{ current_doc_label }}</h2><div class="ed-row"><label for="sl-subject">件名</label><input id="sl-subject" name="subject" type="text" value="{{ subject }}"></div><div class="ed-row"><label for="sl-estimate-no">見積番号</label><input id="sl-estimate-no" name="estimate_no" type="text" value="{{ estimate_no }}"></div><div class="ed-row"><label for="sl-estimate-date">見積日</label><input id="sl-estimate-date" name="estimate_date" type="date" value="{{ estimate_date }}"></div></div>
+      <div class="ed-card"><h3>現場作業人工明細</h3><div class="ed-row no-print" style="justify-content:flex-end;"><label for="sl-add-description-select">内容(ドロップダウン)追加</label><select id="sl-add-description-select"><option value="">選択してください</option>{% for opt in site_content_options %}<option value="{{ opt }}">{{ opt }}</option>{% endfor %}</select>{% for opt in site_content_options %}<label><input type="checkbox" class="sl-content-check" value="{{ opt }}">{{ opt }}</label>{% endfor %}</div><div class="ed-row no-print" style="justify-content:flex-end;"><label for="sl-add-unit-select">単位(ドロップダウン)追加</label><select id="sl-add-unit-select"><option value="">選択してください</option>{% for opt in site_unit_options %}<option value="{{ opt }}">{{ opt }}</option>{% endfor %}</select>{% for opt in site_unit_options %}<label><input type="checkbox" class="sl-unit-check" value="{{ opt }}">{{ opt }}</label>{% endfor %}</div><table class="ed-table" id="sl-lines-table"><thead><tr><th>No.</th><th>内容</th><th>数量</th><th>単位</th><th>時間(分)</th><th>単価</th><th>人工</th>{% if not print_mode %}<th>操作</th>{% endif %}</tr></thead><tbody id="sl-lines-body">{% for line in site_lines %}<tr><td>{{ loop.index }}</td><td><input type="text" name="site_description[]" list="sl-description-options" value="{{ line.description }}"></td><td><input type="number" step="0.001" min="0" name="site_quantity[]" value="{{ line.quantity }}"></td><td><input type="text" name="site_unit[]" list="sl-unit-options" value="{{ line.unit }}"></td><td><input type="number" step="0.1" min="0" name="site_time_per_min[]" value="{{ line.time_per_min }}"></td><td><input type="number" step="1" min="0" name="site_time_total_min[]" value="{{ line.time_total_min }}" readonly></td><td><input type="number" step="0.01" min="0" name="site_man_days[]" value="{{ line.man_days }}" readonly></td>{% if not print_mode %}<td><button type="button" class="sl-delete-row">削除</button></td>{% endif %}</tr>{% endfor %}</tbody></table><div class="ed-right no-print" style="margin-top:8px;"><button type="button" id="sl-add-row-btn">行追加</button></div></div>
+      <div class="ed-card ed-note-card" data-note-prefix="site"><h3>説明・備考</h3>{% for note in site_note_lines %}<div class="ed-row ed-note-row"><label>備考</label><input type="text" name="site_note_{{ loop.index }}" value="{{ note }}" style="min-width:70%;"><button type="button" class="ed-note-delete-row">削除</button></div>{% endfor %}<div class="ed-right no-print" style="margin-top:8px;"><button type="button" class="ed-note-add-row">行追加</button></div></div>
+      <div class="ed-card"><h3>人工集計</h3><div class="ed-grid-3"><div class="ed-row"><label for="sl-total-minutes">総分数</label><input id="sl-total-minutes" name="site_total_minutes" value="{{ site_total_minutes }}" readonly></div><div class="ed-row"><label for="sl-total-hours">総時間</label><input id="sl-total-hours" name="site_total_hours" value="{{ site_total_hours }}" readonly></div><div class="ed-row"><label for="sl-total-man-days">総人工</label><input id="sl-total-man-days" name="site_total_man_days" value="{{ site_total_man_days }}" readonly></div></div></div>
+
+      {% elif doc_type == "zinc_internal" %}
+      <datalist id="zn-description-options"></datalist>
+      <datalist id="zn-unit-options">{% for opt in zinc_unit_options %}<option value="{{ opt }}"></option>{% endfor %}</datalist>
+      <div class="ed-card"><h2>{{ current_doc_label }}</h2><div class="ed-row"><label for="zn-subject">件名</label><input id="zn-subject" name="subject" type="text" value="{{ subject }}"></div><div class="ed-row"><label for="zn-estimate-no">見積番号</label><input id="zn-estimate-no" name="estimate_no" type="text" value="{{ estimate_no }}"></div><div class="ed-row"><label for="zn-estimate-date">見積日</label><input id="zn-estimate-date" name="estimate_date" type="date" value="{{ estimate_date }}"></div></div>
+      <div class="ed-card"><h3>亜鉛メッキ明細</h3><div class="ed-row no-print" style="justify-content:flex-end;"><label for="zn-content-source-select">内容グループ</label><select id="zn-content-source-select">{% for key, values in zinc_content_presets.items() %}<option value="{{ key }}">{{ key }}</option>{% endfor %}</select><label for="zn-add-description-select">内容(ドロップダウン)追加</label><select id="zn-add-description-select"><option value="">選択してください</option></select></div><div class="ed-row no-print" id="zn-content-checkboxes" style="justify-content:flex-end;"></div><div class="ed-row no-print" style="justify-content:flex-end;"><label for="zn-add-unit-select">単位(ドロップダウン)追加</label><select id="zn-add-unit-select"><option value="">選択してください</option>{% for opt in zinc_unit_options %}<option value="{{ opt }}">{{ opt }}</option>{% endfor %}</select>{% for opt in zinc_unit_options %}<label><input type="checkbox" class="zn-unit-check" value="{{ opt }}">{{ opt }}</label>{% endfor %}</div><table class="ed-table" id="zn-lines-table"><thead><tr><th>No.</th><th>内容</th><th>数量</th><th>単位</th><th>重量(kg)</th><th>単価</th><th>金額</th>{% if not print_mode %}<th>操作</th>{% endif %}</tr></thead><tbody id="zn-lines-body">{% for line in zinc_lines %}<tr><td>{{ loop.index }}</td><td><input type="text" name="zinc_description[]" list="zn-description-options" value="{{ line.description }}"></td><td><input type="number" step="0.001" min="0" name="zinc_quantity[]" value="{{ line.quantity }}"></td><td><input type="text" name="zinc_unit[]" list="zn-unit-options" value="{{ line.unit }}"></td><td><input type="number" step="0.001" min="0" name="zinc_weight_kg[]" value="{{ line.weight_kg }}"></td><td><input type="number" step="1" min="0" name="zinc_unit_price[]" value="{{ line.unit_price }}"></td><td><input type="number" step="1" min="0" name="zinc_amount[]" value="{{ line.amount }}" readonly></td>{% if not print_mode %}<td><button type="button" class="zn-delete-row">削除</button></td>{% endif %}</tr>{% endfor %}</tbody></table><div class="ed-right no-print" style="margin-top:8px;"><button type="button" id="zn-add-row-btn">行追加</button></div></div>
+      <div class="ed-card ed-note-card" data-note-prefix="zinc"><h3>説明・備考</h3>{% for note in zinc_note_lines %}<div class="ed-row ed-note-row"><label>備考</label><input type="text" name="zinc_note_{{ loop.index }}" value="{{ note }}" style="min-width:70%;"><button type="button" class="ed-note-delete-row">削除</button></div>{% endfor %}<div class="ed-right no-print" style="margin-top:8px;"><button type="button" class="ed-note-add-row">行追加</button></div></div>
+      <div class="ed-card"><h3>合計</h3><div class="ed-row"><label for="zn-total">合計</label><input id="zn-total" name="zinc_total" value="{{ zinc_total }}" readonly></div></div>
+      {% endif %}
+
+      <div class="ed-right ed-action-bar no-print">
+        <input type="hidden" id="ed-detail-subject-fallback" name="detail_subject_fallback" value="">
+        <input type="hidden" id="ed-detail-estimate-no-fallback" name="detail_estimate_no_fallback" value="">
+        <input type="hidden" id="ed-detail-estimate-date-fallback" name="detail_estimate_date_fallback" value="">
+        {% if doc_type == "quotation_submit" %}
+        <label><input type="checkbox" id="ed-use-subject-filename"> ファイル名を件名+見積書にする</label>
+        {% endif %}
+        <button type="button" id="ed-save-btn">保存</button>
+        <label for="ed-save-format">保存形式</label>
+        <select id="ed-save-format">
+          <option value="json_pdf">JSON + PDF (.json + .pdf)</option>
+          <option value="pdf">PDF (.pdf)</option>
+          <option value="json">JSON (.json)</option>
+          <option value="csv">CSV (.csv)</option>
+          <option value="txt">Text (.txt)</option>
+          <option value="html">HTML (.html)</option>
+        </select>
+        <button type="button" id="ed-save-as-btn">名前を付けて保存</button>
+        <button type="button" id="ed-load-all-btn">全フォームデータ読込</button>
+        <button type="submit" name="action" value="print_preview" formtarget="_blank">印刷プレビュー</button>
+        <button type="submit" name="action" value="print" formtarget="_blank">印刷</button>
+        <button type="submit" name="action" value="printer_settings" formtarget="_blank">プリンタ設定</button>
+        <button type="button" id="ed-clear-btn">クリア</button>
+        <button type="button" id="ed-clear-all-btn">ALLクリア</button>
+      </div>
+    </form>
+    <p class="no-print"><a href="{{ url_for('home') }}">← ホームに戻る</a></p>
+  </div>
+</body>
+</html>

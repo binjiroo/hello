@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>スプライスプレート製作指示書</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- 共通CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/print.css') }}">
+
+  <style>
+    /* ここは splice_plate_order 専用の軽いスタイル（あとで外出しもOK） */
+
+    /* ==========================
+      共通レイアウト（編集/印刷 共通）
+      ========================== */
+
+    .sp-page-wrapper{
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
+    /* 編集画面ではページラッパの横幅も用紙(mm)に合わせる */
+    .sp-edit-mode .sp-page-wrapper{
+      width: {{ layout_profile.page_width_mm }}mm;
+      max-width: none;
+    }
+
+    .sp-section{
+      border: 1px solid #000;
+      padding: 8px 10px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+
+    .sp-section h2{
+      margin: 0 0 6px;
+      font-size: 1rem;
+    }
+
+    .sp-two-columns{
+      display: flex;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .sp-two-columns > .col{
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    .sp-field-row{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 12px;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .sp-field-row label{
+      white-space: nowrap;
+      font-size: 0.9rem;
+    }
+
+    .sp-field-row input{
+      max-width: 220px;
+    }
+
+    /* 図面エリア＋データエリアの縦分割レイアウト（共通のベース） */
+    .sp-layout-main{
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-sizing: border-box;
+      /* min-height は編集モード専用に移動（印刷時には効かせない） */
+    }
+
+    .sp-drawing-area{
+      background: #fafafa;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .sp-drawing-placeholder{
+      position: absolute;
+      inset: 8px;
+      border: 1px dashed #bbb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    /* SVG コンテナ */
+    .sp-drawing-svg{
+      width: 100%;
+      height: 100%;
+      display: block;
+      background: #ffffff;
+    }
+
+    /* 編集画面ではプレースホルダは見せるが、クリックはSVGに届くように */
+    .sp-edit-mode .sp-drawing-placeholder{
+      pointer-events: none;
+    }
+
+    /* 印刷プレビューではプレースホルダ文字は非表示 */
+    .sp-print-mode .sp-drawing-placeholder{
+      display: none;
+    }
+
+    .sp-data-area{
+      background: #fff;
+      box-sizing: border-box;
+      overflow: auto;
+    }
+
+    .sp-data-table{
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    .sp-data-table th,
+    .sp-data-table td{
+      border: 1px solid #000;
+      padding: 2px 4px;
+      text-align: center;
+    }
+
+    .sp-actions{
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .sp-layout-info{
+      font-size: 0.85rem;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .sp-layout-info span.label{
+      font-weight: bold;
+    }
+
+    .sp-data-area-inner{
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      height: 100%;
+      box-sizing: border-box;
+    }
+
+    .sp-meta-block,
+    .sp-spec-block{
+      border: 1px solid #999;
+      padding: 4px 6px;
+      box-sizing: border-box;
+      background: #fff;
+    }
+
+    .sp-meta-block .sp-field-row{
+      margin-bottom: 2px;
+    }
+
+    .sp-meta-block label{
+      min-width: 70px;
+    }
+
+    .sp-actions .sp-btn-preview{
+      display: inline-block;
+      padding: 2px 8px;
+      border: 1px solid #000;
+      border-radius: 4px;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+
+    .sp-actions .sp-btn-preview:hover{
+      background: #eee;
+    }
+
+    /* ==========================
+      画面用（編集モード）
+      ========================== */
+
+    .sp-edit-mode .sp-layout-main{
+      border: 1px solid #000;   /* 外枠 */
+      padding: 6px;
+      min-height: 500px;        /* 保険として残す */
+      height: {{ layout_profile.page_height_mm }}mm;  /* ★ 用紙高さで固定 */
+    }
+
+    .sp-edit-mode .sp-drawing-area{
+      border: 1px solid #999;
+      min-height: 220px;  /* 好きな値に調整してOK（200〜300pxくらい） */
+    }
+
+    .sp-edit-mode .sp-data-area{
+      border: 1px solid #999;
+      padding: 4px;
+    }
+
+    /* ==========================
+      印刷プレビューページ（/print）
+      枠と罫線だけで構成し、余白をなくすベース
+      ========================== */
+
+    /* body 要素に sp-print-mode クラスが付いているページ全体に効く */
+    .sp-print-mode{
+      margin: 0;
+      padding: 0;
+    }
+
+    .sp-print-mode .sp-page-wrapper{
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      width: 100%;
+      max-width: none;   /* 1200px 制限を外す */
+    }
+
+    /* 外枠：ページ全体を囲む
+      → 下側は 0 にして、実質的な下枠は「スプライスプレート情報テーブルの下線」に任せる */
+    .sp-print-mode .sp-layout-main{
+      padding: 0;
+      gap: 0;
+      border-top: 1px solid #000;
+      border-right: 1px solid #000;
+      border-bottom: 0;
+      border-left: 1px solid #000;
+      box-sizing: border-box;
+    }
+
+    /* 上部：作図エリアとデータエリアの境界線だけ残す */
+    .sp-print-mode .sp-drawing-area{
+      border: none;
+      border-bottom: 1px solid #000;
+    }
+
+    /* 下部：データエリアは枠を持たず、中の罫線だけで構成 */
+    .sp-print-mode .sp-data-area{
+      border: none;
+      padding: 0;
+      overflow: visible;
+    }
+
+    /* 3つのテーブル（基本情報／自社情報／仕様一覧）は
+      余白なし＋横いっぱいまで罫線を伸ばす */
+    .sp-print-mode .sp-data-table{
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 !important;   /* inline の margin-bottom を打ち消す */
+    }
+
+    /* テーブルの枠線 */
+    .sp-print-mode .sp-data-table th,
+    .sp-print-mode .sp-data-table td{
+      border: 1px solid #000;
+      padding: 2px 4px;
+    }
+
+    /* ================================
+      sp-print-mode 共通の「太線」対策
+      （画面上の /print ページ表示 + Ctrl+P 両方に効く）
+      ================================ */
+
+    /* 一番上のテーブル（基本情報）は上罫線を描かない
+      → 作図エリアの border-bottom をそのまま使う */
+    .sp-print-mode #sp-data-area > table.sp-data-table:first-of-type thead tr:first-child th,
+    .sp-print-mode #sp-data-area > table.sp-data-table:first-of-type thead tr:first-child td{
+      border-top: none;
+    }
+
+    /* 2つ目以降のテーブルも上罫線を消して、
+      上は直前テーブルの下罫線だけにする */
+    .sp-print-mode #sp-data-area > table.sp-data-table + table.sp-data-table thead tr:first-child th,
+    .sp-print-mode #sp-data-area > table.sp-data-table + table.sp-data-table thead tr:first-child td{
+      border-top: none;
+    }
+
+    /* ※ ここでは「最後のテーブルの下罫線」は消さない
+      → スプライスプレート情報ボックスの下線として必ず描く */
+
+    /* 各テーブルの一番左列は左罫線を消す
+      → 左端は外枠 .sp-layout-main の border-left だけにする */
+    .sp-print-mode #sp-data-area > table.sp-data-table th:first-child,
+    .sp-print-mode #sp-data-area > table.sp-data-table td:first-child{
+      border-left: none;
+    }
+
+    /* 各テーブルの一番右列は右罫線を消す
+      → 右端は外枠 .sp-layout-main の border-right だけにする */
+    .sp-print-mode #sp-data-area > table.sp-data-table th:last-child,
+    .sp-print-mode #sp-data-area > table.sp-data-table td:last-child{
+      border-right: none;
+    }
+
+    /* ==========================
+      印刷時(@media print)だけの追加調整
+      ========================== */
+
+    @media print {
+      /* 画面用の部品は印刷時は非表示 */
+      .no-print{
+        display: none !important;
+      }
+
+      body{
+        margin: 0;
+        padding: 0;
+      }
+
+      /* Ctrl+P 時にも他の print.css より強く効かせるため、
+        body.sp-print-mode を頭に付けて !important を付与 */
+      body.sp-print-mode .sp-layout-main{
+        border-top: 1px solid #000 !important;
+        border-right: 1px solid #000 !important;
+        border-bottom: 0 !important;
+        border-left: 1px solid #000 !important;
+      }
+
+      /* 外枠の線が用紙端ギリギリでクリップされて
+        「薄く / 欠けて」見えないように、
+        印刷時だけ外枠全体を少し内側にオフセットする */
+      body.sp-print-mode .sp-page-wrapper{
+        /* 上下左右 5mm だけ中に入れる */
+        margin: 5mm auto;
+        width: calc(100% - 10mm);
+      }
+    }
+    /* 入力エラー用ハイライト（編集画面のみ） */
+    .sp-edit-mode .sp-error-cell {
+      background-color: #ffe0e0;
+    }
+
+    .sp-edit-mode .sp-error-cell input {
+      background-color: #ffe0e0;
+    }
+
+    .sp-layout-info select#sp-profile-select{
+      font-size: 0.9rem;
+      padding: 2px 4px;
+    }
+
+    /* ==========================
+      H断面 拡大インジケーター
+      ========================== */
+
+    .sp-h-zoom-indicator{
+      position: absolute;
+      right: 8px;
+      bottom: 8px;
+      width: 200px;   /* 好みで調整可 */
+      height: 200px;  /* 好みで調整可 */
+      background: #fff;
+      border: 1px solid #999;
+      box-sizing: border-box;
+      padding: 4px;
+      box-shadow: 0 0 4px rgba(0,0,0,0.15);
+      z-index: 10;    /* プレースホルダより前面 */
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sp-h-zoom-controls{
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 4px;
+      font-size: 0.8rem;
+    }
+
+    .sp-h-zoom-controls input[type="range"]{
+      flex: 1 1 auto;
+    }
+
+    .sp-h-zoom-controls button{
+      flex: 0 0 auto;
+      width: 2rem;
+      padding: 2px 0;
+    }
+
+    .sp-h-zoom-indicator-title{
+      font-size: 0.75rem;
+      text-align: center;
+      margin-bottom: 2px;
+      color: #555;
+    }
+
+    .sp-h-zoom-indicator-inner{
+      flex: 1 1 auto;
+      /* JSで作るズーム用SVGがここに入る */
+    }
+  </style>
+
+  <!-- ★ ここを追加: サーバ側のプリセットマップを JS に渡す -->
+  {% if splice_presets_json %}
+  <script>
+    window.SPLICE_PRESETS = {{ splice_presets_json | safe }};
+  </script>
+  {% else %}
+  <script>
+    window.SPLICE_PRESETS = {};
+  </script>
+  {% endif %}
+
+  <!-- 後で描画や比率制御を行う外部JS -->
+  <script src="{{ url_for('static', filename='js/splice_plate_order_app.js', v='20260208e') }}" defer></script>
+</head>
+
+<body
+  data-page-width="{{ layout_profile.page_width_mm }}"
+  data-page-height="{{ layout_profile.page_height_mm }}"
+  data-orientation="{{ layout_profile.orientation }}"
+  data-drawing-ratio="{{ layout_profile.drawing_ratio }}"
+  data-data-ratio="{{ layout_profile.data_ratio }}"
+  class="{% if print_mode %}sp-print-mode{% else %}sp-edit-mode{% endif %}"
+  data-profile-key="{{ profile_key }}"
+  data-drag-session-id="{{ drag_session_id|default('') }}"
+>
+  <div class="sp-page-wrapper">
+
+    <h1 class="no-print">スプライスプレート製作指示書</h1>
+
+    <form method="POST" novalidate>
+      {# ===========================
+         1) 用紙レイアウト（編集画面のみ表示）
+         =========================== #}
+      {% if not print_mode %}
+
+        <div class="sp-layout-info">
+          <div>
+            <span class="label">プロファイル:</span>
+
+            <!-- ★ レイアウトプロファイル選択用セレクトボックス -->
+            <select id="sp-profile-select" name="profile">
+              {% for key, label in layout_profiles.items() %}
+                <option value="{{ key }}" {% if key == profile_key %}selected{% endif %}>
+                  {{ label }}
+                </option>
+              {% endfor %}
+            </select>
+
+            <!-- 任意: 現在のプロファイル名を小さく表示 -->
+            <span style="margin-left: 4px; font-size: 0.85em;">
+              現在: {{ layout_profile.label }}（key: {{ profile_key }}）
+            </span>
+          </div>
+
+          <div>
+            <span class="label">用紙サイズ:</span>
+            {{ layout_profile.page_width_mm }} × {{ layout_profile.page_height_mm }} mm
+            （{{ layout_profile.orientation == 'landscape' and '横' or '縦' }}）
+          </div>
+          <div>
+            <span class="label">エリア比率:</span>
+            図面 {{ (layout_profile.drawing_ratio * 100) | round(1) }}%
+            / データ {{ (layout_profile.data_ratio * 100) | round(1) }}%
+          </div>
+        </div>
+
+        <div class="sp-field-row no-print" style="justify-content:flex-end; margin: 4px 0 8px;">
+          <label style="display:inline-flex; gap:6px; align-items:center;">
+            ドラッグモード
+            <select id="sp-drag-mode">
+              <option value="off">無効</option>
+              <option value="all" selected>全体（Step1）</option>
+              <option value="split">H断面／スプライス（Step2）</option>
+              <option value="flange">H断面／フランジ(外+内)／ウェブ（Step3）</option>
+              <option value="plates">H断面／外フランジ／内フランジ／ウェブ（Step4）</option>
+            </select>
+          </label>
+        </div>
+      {% endif %}
+
+      {# ===========================
+         2) 作図エリア + データエリア（上下分割）
+         =========================== #}
+      <div class="sp-layout-main" id="sp-layout-main">
+        <!-- 上側: 作図エリア -->
+        <section
+          class="sp-drawing-area"
+          id="sp-drawing-area"
+          {% if print_mode %}
+            style="height: {{ (layout_profile.page_height_mm * layout_profile.drawing_ratio) | round(1) }}mm;"
+          {% endif %}
+        >
+          <!-- ★ SVG キャンバス（骨格線描画用） -->
+          <svg
+            id="sp-drawing-svg"
+            class="sp-drawing-svg"
+            xmlns="http://www.w3.org/2000/svg"
+          ></svg>
+
+          <!-- プレースホルダーのテキストはそのまま残す -->
+          <div class="sp-drawing-placeholder">
+            スプライスプレート作図エリア（後で SVG / Canvas で実装）
+          </div>
+
+          <!-- ★ H断面 拡大インジケーター（編集画面のみ表示） -->
+          {% if not print_mode %}
+          <div id="sp-h-zoom-indicator" class="sp-h-zoom-indicator no-print">
+            <div class="sp-h-zoom-indicator-title">H断面 拡大ビュー</div>
+            <div class="sp-h-zoom-indicator-inner" id="sp-h-zoom-inner">
+              <!-- JS で zoom 用 SVG (#sp-h-zoom-svg) をここに挿入 -->
+            </div>
+
+            <div class="sp-h-zoom-controls no-print">
+              <button type="button" id="sp-h-zoom-minus">−</button>
+              <input
+                type="range"
+                id="sp-h-zoom-slider"
+                min="50"
+                max="5000"
+                value="200"
+              >
+              <button type="button" id="sp-h-zoom-plus">＋</button>
+            </div>
+
+          </div>
+          {% endif %}
+        </section>
+
+        <!-- 下側: データエリア（基本情報 + 自社情報 + スプライス仕様一覧） -->
+        <section class="sp-data-area" id="sp-data-area">
+
+          {# --- 印刷専用：基本情報を横並びテーブルで表示 --- #}
+          {% if print_mode %}
+          <table class="sp-data-table" style="margin-bottom: 4px;">
+            <thead>
+              <tr>
+                <th>物件名</th>
+                <th>発注日</th>
+                <th>納品日</th>
+                <th>納品場所</th>
+                <th>担当者</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{{ project_name }}</td>
+                <td>{{ order_date }}</td>
+                <td>{{ delivery_date }}</td>
+                <td>{{ delivery_place }}</td>
+                <td>{{ chief_name }}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          {# --- 印刷専用：自社情報を横並びテーブルで表示 --- #}
+          <table class="sp-data-table" style="margin-bottom: 6px;">
+            <thead>
+              <tr>
+                <th>社名</th>
+                <th>TEL</th>
+                <th>FAX</th>
+                <th>E-mail</th>
+                <th>Web</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{{ company_name }}</td>
+                <td>{{ tel }}</td>
+                <td>{{ fax }}</td>
+                <td>{{ email }}</td>
+                <td>{{ web_url }}</td>
+              </tr>
+            </tbody>
+          </table>
+          {% endif %}
+
+          {# --- Web画面用の見出し（印刷では非表示） --- #}
+          {% if not print_mode %}
+            <h2 style="margin: 0 0 4px;">スプライスプレート情報</h2>
+          {% endif %}
+
+          {# --- Web画面用：基本情報 + 自社情報（2カラムフォーム） --- #}
+          {% if not print_mode %}
+          <div class="sp-two-columns">
+            <div class="col">
+              <h3>基本情報</h3>
+
+              <div class="sp-field-row">
+                <label>物件名:</label>
+                <input type="text" name="project_name" value="{{ project_name }}">
+              </div>
+
+              <div class="sp-field-row">
+                <label>発注日:</label>
+                <input type="date" name="order_date" value="{{ order_date }}">
+              </div>
+
+              <div class="sp-field-row">
+                <label>納品日:</label>
+                <input type="date" name="delivery_date" value="{{ delivery_date }}">
+              </div>
+
+              <div class="sp-field-row">
+                <label>納品場所:</label>
+                <input type="text" name="delivery_place" value="{{ delivery_place }}">
+              </div>
+
+              <div class="sp-field-row">
+                <label>担当者:</label>
+                <input type="text" name="chief_name" value="{{ chief_name }}">
+              </div>
+            </div>
+
+            <div class="col">
+              <h3>自社情報</h3>
+
+              <div class="sp-field-row">
+                <label>社名:</label>
+                <input type="text" name="company_name" value="{{ company_name }}">
+              </div>
+
+              <div class="sp-field-row">
+                <label>TEL:</label>
+                <input type="text" name="tel" value="{{ tel }}">
+              </div>
+
+              <div class="sp-field-row">
+                <label>FAX:</label>
+                <input type="text" name="fax" value="{{ fax }}">
+              </div>
+
+              <div class="sp-field-row">
+                <label>E-mail:</label>
+                <input type="email" name="email" value="{{ email }}">
+              </div>
+
+              <div class="sp-field-row">
+                <label>Web:</label>
+                <input type="text" name="web_url" value="{{ web_url }}">
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+{# --- 「スプライスプレート仕様一覧」のラベルは印刷時は不要 --- #}
+{% if not print_mode %}
+  <h3>スプライスプレート仕様一覧</h3>
+
+  <!-- プリセット自動適用の ON/OFF トグル（編集画面のみ表示） -->
+  <div class="sp-field-row no-print" style="justify-content: flex-end; margin-bottom: 4px;">
+    <label>
+      <input type="checkbox" id="sp-ui-auto-preset-toggle" checked>
+      H型鋼サイズ変更時にプリセットを自動入力
+    </label>
+    <br>
+    <label style="display:inline-flex; gap:6px; align-items:center;">
+      <input type="checkbox" id="sp-hole-cross-toggle">
+      孔芯十字線
+    </label>
+  </div>
+
+  <!-- =========================
+       共通設定
+       ========================= -->
+  <fieldset class="sp-group sp-common-settings">
+    <legend>共通設定</legend>
+
+    <div class="sp-field-row">
+      <label for="sp-common-flange-end-pitch-mm">fg終端孔ピッチ</label>
+      <input
+        type="number"
+        id="sp-common-flange-end-pitch-mm"
+        name="h_end_pitch_mm"
+        min="0"
+        step="1"
+        style="width: 80px;"
+        value="{{ h_end_pitch_mm|default(end_pitch_mm|default('')) }}"
+      >
+      <span class="unit">mm</span>
+    </div>
+
+    <div class="sp-field-row">
+      <label for="sp-common-flangesp-end-pitch-mm">fgsp終端孔ピッチ</label>
+      <input
+        type="number"
+        id="sp-common-flangesp-end-pitch-mm"
+        name="pl_end_pitch_mm"
+        min="0"
+        step="1"
+        style="width: 80px;"
+        value="{{ pl_end_pitch_mm|default(end_pitch_mm|default('')) }}"
+      >
+      <span class="unit">mm</span>
+    </div>
+
+    <!-- ★ 新仕様：ウェブ終端孔ピッチは共通設定に移動して細分化 -->
+    <div class="sp-field-row">
+      <label for="sp-common-web-end-pitch-mm">web終端孔ピッチ</label>
+      <input
+        type="number"
+        id="sp-common-web-end-pitch-mm"
+        name="web_end_pitch_mm"
+        min="0"
+        step="0.1"
+        style="width: 80px;"
+        value="{{ web_end_pitch_mm|default('') }}"
+      >
+      <span class="unit">mm</span>
+    </div>
+
+    <div class="sp-field-row">
+      <label for="sp-common-websp-x-end-pitch-mm">websp(X)終端孔ピッチ</label>
+      <input
+        type="number"
+        id="sp-common-websp-x-end-pitch-mm"
+        name="websp_x_end_pitch_mm"
+        min="0"
+        step="0.1"
+        style="width: 80px;"
+        value="{{ websp_x_end_pitch_mm|default('') }}"
+      >
+      <span class="unit">mm</span>
+    </div>
+
+    <div class="sp-field-row">
+      <label for="sp-common-websp-y-end-pitch-mm">websp(Y)終端孔ピッチ</label>
+      <input
+        type="number"
+        id="sp-common-websp-y-end-pitch-mm"
+        name="websp_y_end_pitch_mm"
+        min="0"
+        step="0.1"
+        style="width: 80px;"
+        value="{{ websp_y_end_pitch_mm|default('') }}"
+      >
+      <span class="unit">mm</span>
+    </div>
+
+    <div class="sp-field-row">
+      <label for="sp-common-clearance-mm">クリアランス</label>
+      <input
+        type="number"
+        id="sp-common-clearance-mm"
+        name="clearance_mm"
+        min="0"
+        step="1"
+        style="width: 80px;"
+        value="{{ clearance_mm|default('') }}"
+      >
+      <span class="unit">mm</span>
+      
+      <label>
+        寸法 1段目オフセット(mm)
+        <select id="sp-dim-tier1-mm">
+          <option value="25">25</option>
+          <option value="50" selected>50</option>
+          <option value="75">75</option>
+          <option value="100">100</option>
+        </select>
+      </label>
+
+        <label>
+          寸法 2段目段間比（1 / n）
+          <select id="sp-dim-tier2-denom">
+            <option value="1" selected>1/1</option>
+            <option value="2">1/2</option>
+            <option value="3">1/3</option>
+            <option value="4">1/4</option>
+            <option value="5">1/5</option>
+          </select>
+        </label>
+        <label>
+          寸法文字(mm)
+          <input
+            id="sp-dim-font-mm"
+            name="dim_font_mm"
+            type="number"
+            step="0.1"
+            style="width:70px;"
+            value="{{ dim_font_mm|default('') }}"
+          >
+        </label>
+    </div>
+  </fieldset>
+
+  <!-- =========================
+       フランジ孔設定
+       ========================= -->
+  <fieldset class="sp-group sp-flange-hole-settings">
+    <legend>フランジ孔設定</legend>
+    <label for="sp-flange-hole-dia-mm">孔径</label>
+    <input
+      id="sp-flange-hole-dia-mm"
+      name="flange_hole_dia_mm"
+      type="text"
+      style="width:70px;"
+      value="{{ flange_hole_dia_mm|default('') }}"
+    >
+
+    <label for="sp-flange-col-pitch-mm">列孔ピッチ</label>
+    <input
+      id="sp-flange-col-pitch-mm"
+      name="flange_col_pitch_mm"
+      type="number"
+      step="0.1"
+      style="width:80px;"
+      value="{{ flange_col_pitch_mm|default('') }}"
+    >
+
+    <label for="sp-flange-hole-count-x">列孔数</label>
+    <input
+      id="sp-flange-hole-count-x"
+      name="flange_hole_count_x"
+      type="number"
+      min="0"
+      style="width:70px;"
+      value="{{ flange_hole_count_x|default('') }}"
+    >
+
+      <label for="sp-flange-row-pitch-mm">行孔ピッチ</label>
+      <input
+        id="sp-flange-row-pitch-mm"
+        name="flange_row_pitch_mm"
+        type="number"
+        step="0.1"
+        style="width:80px;"
+        value="{{ flange_row_pitch_mm|default('') }}"
+      >
+
+      <label for="sp-flange-row-edge-mm">行端距離</label>
+      <input
+        id="sp-flange-row-edge-mm"
+        name="flange_row_edge_mm"
+        type="number"
+        step="0.1"
+        style="width:80px;"
+        value="{{ flange_row_edge_mm|default('') }}"
+      >
+
+      <label for="sp-flange-hole-count-y">行孔数</label>
+      <input
+        id="sp-flange-hole-count-y"
+        name="flange_hole_count_y"
+      type="number"
+      min="0"
+      style="width:70px;"
+      value="{{ flange_hole_count_y|default('') }}"
+    >
+  </fieldset>
+
+  <!-- =========================
+       ウェブ孔設定
+       ========================= -->
+  <fieldset class="sp-group sp-web-hole-settings">
+    <legend>ウェブ孔設定</legend>
+
+    {# ★ 新仕様：終端孔ピッチ(ウェブ) は共通設定へ移動済み #}
+    <label for="sp-web-hole-dia-mm">孔径</label>
+    <input
+      id="sp-web-hole-dia-mm"
+      name="web_hole_dia_mm"
+      type="text"
+      style="width:70px;"
+      value="{{ web_hole_dia_mm|default('') }}"
+    >
+
+    <label for="sp-web-col-pitch-mm">列孔ピッチ</label>
+    <input
+      id="sp-web-col-pitch-mm"
+      name="web_col_pitch_mm"
+      type="number"
+      step="0.1"
+      style="width:80px;"
+      value="{{ web_col_pitch_mm|default('') }}"
+    >
+
+    <label for="sp-web-hole-count-x">列孔数</label>
+    <input
+      id="sp-web-hole-count-x"
+      name="web_hole_count_x"
+      type="number"
+      min="0"
+      style="width:70px;"
+      value="{{ web_hole_count_x|default('') }}"
+    >
+
+    <label for="sp-web-row-pitch-mm">行孔ピッチ</label>
+    <input
+      id="sp-web-row-pitch-mm"
+      name="web_row_pitch_mm"
+      type="number"
+      step="0.1"
+      style="width:80px;"
+      value="{{ web_row_pitch_mm|default('') }}"
+    >
+
+    <label for="sp-web-hole-count-y">行孔数</label>
+    <input
+      id="sp-web-hole-count-y"
+      name="web_hole_count_y"
+      type="number"
+      min="0"
+      style="width:70px;"
+      value="{{ web_hole_count_y|default('') }}"
+    >
+  </fieldset>
+{% endif %}
+
+{% if print_mode %}
+  <!-- print_mode: JS が参照する共通設定を hidden で保持 -->
+  <input type="hidden" id="sp-common-flange-end-pitch-mm" name="h_end_pitch_mm" value="{{ h_end_pitch_mm|default(end_pitch_mm|default('')) }}">
+  <input type="hidden" id="sp-common-flangesp-end-pitch-mm" name="pl_end_pitch_mm" value="{{ pl_end_pitch_mm|default(end_pitch_mm|default('')) }}">
+  <input type="hidden" id="sp-common-web-end-pitch-mm" name="web_end_pitch_mm" value="{{ web_end_pitch_mm|default('') }}">
+  <input type="hidden" id="sp-common-websp-x-end-pitch-mm" name="websp_x_end_pitch_mm" value="{{ websp_x_end_pitch_mm|default('') }}">
+  <input type="hidden" id="sp-common-websp-y-end-pitch-mm" name="websp_y_end_pitch_mm" value="{{ websp_y_end_pitch_mm|default('') }}">
+  <input type="hidden" id="sp-common-clearance-mm" name="clearance_mm" value="{{ clearance_mm|default('') }}">
+
+  <input type="hidden" id="sp-flange-hole-dia-mm" name="flange_hole_dia_mm" value="{{ flange_hole_dia_mm|default('') }}">
+  <input type="hidden" id="sp-flange-col-pitch-mm" name="flange_col_pitch_mm" value="{{ flange_col_pitch_mm|default('') }}">
+  <input type="hidden" id="sp-flange-hole-count-x" name="flange_hole_count_x" value="{{ flange_hole_count_x|default('') }}">
+  <input type="hidden" id="sp-flange-row-pitch-mm" name="flange_row_pitch_mm" value="{{ flange_row_pitch_mm|default('') }}">
+  <input type="hidden" id="sp-flange-row-edge-mm" name="flange_row_edge_mm" value="{{ flange_row_edge_mm|default('') }}">
+  <input type="hidden" id="sp-flange-hole-count-y" name="flange_hole_count_y" value="{{ flange_hole_count_y|default('') }}">
+
+  <input type="hidden" id="sp-web-hole-dia-mm" name="web_hole_dia_mm" value="{{ web_hole_dia_mm|default('') }}">
+  <input type="hidden" id="sp-web-col-pitch-mm" name="web_col_pitch_mm" value="{{ web_col_pitch_mm|default('') }}">
+  <input type="hidden" id="sp-web-hole-count-x" name="web_hole_count_x" value="{{ web_hole_count_x|default('') }}">
+  <input type="hidden" id="sp-web-row-pitch-mm" name="web_row_pitch_mm" value="{{ web_row_pitch_mm|default('') }}">
+  <input type="hidden" id="sp-web-hole-count-y" name="web_hole_count_y" value="{{ web_hole_count_y|default('') }}">
+  <input type="hidden" id="sp-dim-font-mm" name="dim_font_mm" value="{{ dim_font_mm|default('') }}">
+{% endif %}
+
+  <input type="hidden" id="sp-drag-session-id" name="drag_session_id" value="{{ drag_session_id|default('') }}">
+  <input type="hidden" id="sp-hole-cross-print" name="hole_cross_enabled" value="{{ hole_cross_enabled|default('') }}">
+
+<!-- =========================
+     スプライスプレート型情報（一覧テーブル）
+     ========================= -->
+<fieldset class="sp-group sp-splice-plate-type-info">
+  <legend>スプライスプレート型情報</legend>
+
+  <table class="sp-data-table sp-type-table">
+    <thead>
+      <tr>
+        <th>No.</th>
+        <th>H型鋼サイズ</th>
+        <th>セット数</th>
+        <th>フランジプレート(外)<br>(t × B × L)</th>
+        <th>フランジプレート(内)<br>(t × B × L)</th>
+        <th>ウェブプレート<br>(t × B × L)</th>
+        <th>孔径</th>
+        <th>フランジ孔(外)</th>
+        <th>フランジ孔(内)</th>
+        <th>ウェブ孔</th>
+        <th>備考</th>
+        {% if not print_mode %}
+          <th>操作</th>
+        {% endif %}
+      </tr>
+    </thead>
+
+    <tbody id="sp-type-rows">
+      {% for row in rows %}
+      <tr>
+        <td>{{ loop.index }}</td>
+
+        <!-- H型鋼サイズ -->
+        <td>
+          {% if print_mode %}
+            {{ row.h_size }}
+            <input type="hidden" name="h_size[]" value="{{ row.h_size }}">
+          {% else %}
+            <input type="text" name="h_size[]" list="h_size_list"
+                  style="width: 90%;" value="{{ row.h_size }}">
+          {% endif %}
+        </td>
+
+        <!-- セット数 -->
+        <td>
+          {% if print_mode %}
+            {{ row.set_count if row.set_count is not none else "" }}
+          {% else %}
+            <input type="number" name="set_count[]" min="1" style="width: 60px;"
+                  value="{{ row.set_count if row.set_count is not none else '' }}">
+          {% endif %}
+        </td>
+
+        <!-- フランジプレート(外) -->
+        <td>
+          {% if print_mode %}
+            {{ row.flange_plate_outer }}
+            <input type="hidden" name="flange_plate_outer[]" value="{{ row.flange_plate_outer }}">
+          {% else %}
+            <input type="text" name="flange_plate_outer[]" placeholder="t×B×L"
+                  style="width: 95%;" value="{{ row.flange_plate_outer }}">
+          {% endif %}
+        </td>
+
+        <!-- フランジプレート(内) -->
+        <td>
+          {% if print_mode %}
+            {{ row.flange_plate_inner }}
+            <input type="hidden" name="flange_plate_inner[]" value="{{ row.flange_plate_inner }}">
+          {% else %}
+            <input type="text" name="flange_plate_inner[]" placeholder="t×B×L"
+                  style="width: 95%;" value="{{ row.flange_plate_inner }}">
+          {% endif %}
+        </td>
+
+        <!-- ウェブプレート -->
+        <td>
+          {% if print_mode %}
+            {{ row.web_plate }}
+            <input type="hidden" name="web_plate[]" value="{{ row.web_plate }}">
+          {% else %}
+            <input type="text" name="web_plate[]" placeholder="t×B×L"
+                  style="width: 95%;" value="{{ row.web_plate }}">
+          {% endif %}
+        </td>
+
+        <!-- 孔径 -->
+        <td>
+          {% if print_mode %}
+            {{ row.hole_dia }}{% if row.hole_dia and 'Φ' not in row.hole_dia %}Φ{% endif %}
+            <input type="hidden" name="hole_dia[]" value="{{ row.hole_dia }}">
+          {% else %}
+            <input type="text" name="hole_dia[]" style="width: 60px;"
+                  value="{{ row.hole_dia }}">
+            <span>Φ</span>
+          {% endif %}
+        </td>
+
+        <!-- フランジ孔(外) -->
+        <td>
+            {% if print_mode %}
+              {% if flange_hole_count_x and flange_hole_count_y %}
+                {{ (flange_hole_count_x|int * flange_hole_count_y|int) * 2 }}
+              {% endif %}
+            {% else %}
+            <input type="text" name="flange_holes_outer[]" style="width: 90%;"
+                  value="">
+          {% endif %}
+        </td>
+
+        <!-- フランジ孔(内) -->
+        <td>
+            {% if print_mode %}
+              {% if flange_hole_count_x and flange_hole_count_y %}
+                {{ (flange_hole_count_x|int * (flange_hole_count_y|int // 2)) * 2 }}
+              {% endif %}
+            {% else %}
+            <input type="text" name="flange_holes_inner[]" style="width: 90%;"
+                  value="">
+          {% endif %}
+        </td>
+
+        <!-- ウェブ孔 -->
+        <td>
+            {% if print_mode %}
+              {% if web_hole_count_x and web_hole_count_y %}
+                {{ (web_hole_count_x|int * web_hole_count_y|int) * 2 }}
+              {% endif %}
+            {% else %}
+            <input type="text" name="web_holes[]" style="width: 90%;"
+                  value="">
+          {% endif %}
+        </td>
+
+        <!-- 備考 -->
+        <td>
+          {% if print_mode %}
+            {{ row.remarks }}
+          {% else %}
+            <input type="text" name="remarks[]" style="width: 95%;"
+                  value="{{ row.remarks }}">
+            <input type="hidden" name="hole_count_x[]" value="{{ row.hole_count_x if row.hole_count_x is not none else '' }}">
+            <input type="hidden" name="hole_count_y[]" value="{{ row.hole_count_y if row.hole_count_y is not none else '' }}">
+            <input type="hidden" name="col_pitch[]" value="{{ row.col_pitch }}">
+            <input type="hidden" name="row_pitch[]" value="{{ row.row_pitch }}">
+          {% endif %}
+        </td>
+
+        {% if not print_mode %}
+          <!-- 操作 -->
+          <td>
+            <button type="button" class="sp-type-row-copy">複製</button>
+            <button type="button" class="sp-type-row-delete">削除</button>
+          </td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</fieldset>
+
+          {% if not print_mode %}
+          <!-- H型鋼サイズの候補リスト（編集画面のみ） -->
+          <datalist id="h_size_list">
+            {% for size in steel_sizes %}
+              <option value="{{ size }}"></option>
+            {% endfor %}
+          </datalist>
+
+          <!-- 操作用ボタン（編集画面のみ） -->
+          <div class="sp-actions no-print">
+            <button type="button" id="sp-add-row-btn">行追加</button>
+
+            <!-- 通常保存 -->
+            <button type="submit" name="action" value="save">保存</button>
+
+            <!-- 変更後：同じルート("/") に POST しつつ、action で判別する -->
+            <button
+              type="submit"
+              id="sp-print-preview-btn"
+              name="action"
+              value="print_preview"
+              formtarget="_blank" 
+            >
+              印刷プレビュー
+            </button>
+          </div>
+          {% endif %}
+        </section>
+      </div>
+    </form>
+
+    <p class="no-print" style="margin-top: 12px;">
+      <a href="{{ url_for('home') }}">← ホームに戻る</a>
+    </p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+	<meta charset="UTF-8">
+	<title>ガセットウェーブプレート生成</title>
+	<style>
+		body {
+			display: flex;
+			justify-content: space-between;
+			gap: 20px;
+			padding: 20px;
+		}
+
+		h1 {
+			outline-color: rgb(255, 105, 30);
+			outline-width: medium;
+			outline-style: dashed;
+		}
+
+		label {
+			background-color: rgb(200, 200, 255);
+			font-size: 14pt;
+			padding: 2px;
+			margin: 0px;
+		}
+
+		input,
+		select,
+		button,
+		textarea {
+			font-size: 14pt;
+			padding: 2px;
+			margin: 0px;
+		}
+
+		pre {
+			font-size: 16pt;
+			padding: 2px;
+			margin: 0px;
+		}
+
+		.actions button {
+			margin-right: 8px;
+		}
+
+		.left-column {
+			width: 60%;
+			/* 左側のカラムの幅 */
+		}
+
+		.right-column {
+			width: 35%;
+			background: #f9f9f9;
+			padding: 20px;
+			border: 1px solid #ccc;
+		}
+	</style>
+</head>
+
+<body>
+
+	<!-- 左：入力フォーム & 結果 -->
+	<div class="left-column">
+		<h1>ガセットウェーブプレート生成</h1>
+
+		{% if error_msg %}
+		<p style="color:red;">{{ error_msg }}</p>
+		{% endif %}
+
+		<form method="post">
+			<!-- 追記用前回結果 -->
+			<textarea name="prev_result" style="display:none">{{ result_str }}</textarea>
+
+			<label for="h_type">親H型鋼サイズ:</label></br>
+			<select name="h_type" id="h_type" required></label>
+				{% for size in steel_sizes %}
+				<option value="{{ size }}">{{ size }}</option>
+				{% endfor %}
+			</select>
+			<br><br>
+			<label for="sub_h_type">子H型鋼サイズ</label></br>
+			<select name="sub_h_type" id="sub_h_type" required></label>
+				{% for size in steel_sizes %}
+				<option value="{{ size }}">{{ size }}</option>
+				{% endfor %}
+			</select>
+			<br><br>
+			<label for="hole_column">列孔数</label></br>
+			<select name="hole_column" id="hole_column">
+				{% for val in ["1", "2", "3", "4", "5"] %}
+				<option value="{{val}}" {% if defaults.hole_column==val %}selected{% endif %}>{{val}}</option>
+				{% endfor %}
+			</select>
+			<br><br>
+			<label for="hole_pitch">孔ピッチ</label></br>
+			<select name="hole_pitch" id="hole_pitch">
+				{% for val in ["15", "30", "45", "50", "60", "75", "90", "100", "120", "150", "175", "200"] %}
+				<option value="{{val}}" {% if defaults.hole_pitch==val %}selected{% endif %}>{{val}}</option>
+				{% endfor %}
+			</select>
+			<br><br>
+			<label for="clearance">クリアランス</label></br>
+			<select name="clearance" id="clearance">
+				{% for val in ["0", "5", "10", "15", "20"] %}
+				<option value="{{val}}" {% if defaults.clearance==val %}selected{% endif %}>{{val}}</option>
+				{% endfor %}
+			</select>
+			<br><br>
+			<label for="end_hole_pitch">終端孔ピッチ</label></br>
+			<select name="end_hole_pitch" id="end_hole_pitch">
+				{% for val in ["20", "30", "40", "50", "60", "75", "90", "100", "120", "150", "175", "200"] %}
+				<option value="{{val}}" {% if defaults.end_hole_pitch==val %}selected{% endif %}>{{val}}</option>
+				{% endfor %}
+			</select>
+			<br><br>
+			<label>ガセット名</label></br>
+			<input name="gusset_name" value="{{ defaults.gusset_name }}" required></label></br>
+			<label for="t">板厚(t)</label></br>
+			<select name="t" id="t">
+				{% for val in ["1.6", "2.3", "3.2", "4.5", "6", "9", "12", "16", "19", "24", "27"] %}
+				<option value="{{val}}" {% if defaults.t==val %}selected{% endif %}>{{val}}</option>
+				{% endfor %}
+			</select>
+			<br><br>
+			<label for="s1">制御コード1:</label><br>
+			<select name="s1" id="s1">
+				{% for val in ["10", "20", "01", "02", "03", "04", "05", "06", "07"] %}
+				<option value="{{val}}" {% if defaults.s1==val %}selected{% endif %}>{{val}}</option>
+				{% endfor %}
+			</select><br><br>
+
+			<label for="s1">制御コード2:</label><br>
+			<select name="s2" id="s2">
+				{% for val in ["10", "20", "01", "02", "03", "04", "05", "06", "07"] %}
+				<option value="{{val}}" {% if defaults.s2==val %}selected{% endif %}>{{val}}</option>
+				{% endfor %}
+			</select><br><br>
+
+			<label for="off_choicee">基準点:</label><br>
+			<select name="off_choice" id="off_choice">
+				{% for val in ["1", "2", "3", "4", "5", "6", "7", "8", "9"] %}
+				<option value="{{val}}" {% if defaults.off_choice==val %}selected{% endif %}>{{val}}</option>
+				{% endfor %}
+			</select><br><br>
+
+			<label for="lc">線色:</label>
+			<select name="lc" id="lc">
+				{% for val in ["1", "2", "3", "4", "5", "6"] %}
+				<option value="{{val}}" {% if defaults.lc==val %}selected{% endif %}>{{val}}</option>
+				{% endfor %}
+			</select><br><br>
+
+			<label for="lt">線種:</label>
+			<select name="lt" id="lt">
+				{% for val in ["1", "2", "3", "4", "5", "6", "7", "8", "9"] %}
+				<option value="{{val}}" {% if defaults.lt==val %}selected{% endif %}>{{val}}</option>
+				{% endfor %}
+			</select><br><br>
+
+			<label for="ly">レイヤー:</label>
+			<select name="ly" id="ly">
+				{% for val in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "-11"] %}
+				<option value="{{val}}" {% if defaults.ly==val %}selected{% endif %}>{{val}}</option>
+				{% endfor %}
+			</select><br><br>
+
+			<label for="members">部材数:</label>
+			<select name="members" id="members">
+				{% for val in ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16",
+				"17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30",] %}
+				<option value="{{val}}" {% if defaults.members==val %}selected{% endif %}>{{val}}</option>
+				{% endfor %}
+			</select><br><br>
+
+			<label for="separator">区切記号:</label>
+			<select name="separator" id="separator">
+				{% for val in ["999", "998", "997", "996", "995", "994", "993", "992", "991", "990"] %}
+				<option value="{{val}}" {% if defaults.separator==val %}selected{% endif %}>{{val}}</option>
+				{% endfor %}
+			</select><br><br>
+
+			<label for="scale">倍率:</label>
+			<select name="scale" id="scale">
+				{% for val in ["", "0", "0.5", "1", "1.5", "2", "2.5", "3", "3.5", "4", "4.5", "5", "5.5", "6", "6.5",
+				"7", "7.5", "8", "8.5", "9", "9.5", "10"] %}
+				<option value="{{val}}" {% if defaults.scale==val %}selected{% endif %}>{{val}}</option>
+				{% endfor %}
+			</select><br><br>
+
+			<label for="actual_size">実寸:</label>
+			<select name="actual_size" id="actual_size">
+				{% for val in ["", "100", "200", "300", "700", "750", "751", "760", "761", "762", "763", "764", "765",
+				"767", "768", "800", "10000", "11400", "12930"] %}
+				<option value="{{val}}" {% if defaults.actual_size==val %}selected{% endif %}>{{val}}</option>
+				{% endfor %}
+			</select><br><br>
+
+			<label for="command">指示数:</label>
+			<select name="command" id="command">
+				{% for val in ["1", "2", "3", "4", "5"] %}
+				<option value="{{val}}" {% if defaults.command==val %}selected{% endif %}>{{val}}</option>
+				{% endfor %}
+				<option value="1">1</option>
+				<option value="2">2</option>
+				<option value="3">3</option>
+				<option value="4">4</option>
+				<option value="5">5</option>
+			</select><br><br>
+
+			<div class="actions">
+				<button type="submit" name="action" value="new">新規計算</button>
+				<button type="submit" name="action" value="append">追加計算</button>
+				<button type="submit" name="action" value="clear">クリア</button>
+			</div>
+		</form>
+
+		<p><a href="{{ url_for('home') }}">← ホームに戻る</a></p>
+
+		<label for="saveFilename">保存ファイル名：</label>
+		<select name="saveFilename" id="saveFilename">
+			{% for fname in filenames %}
+			<option value="{{ fname }}">{{ fname }}</option>
+			{% endfor %}
+		</select><br><br>
+		<button type="button" id="pickDirBtn">保存先フォルダを選択</button>
+		<button type="button" id="saveInDirBtn" disabled>ディレクトリに保存</button>
+
+		{% if result_str %}
+		<h1>計算結果</h1>
+		<pre id="resultDisplay">{{ result_str }}</pre>
+		<button onclick="copyResult()">結果をコピー</button>
+		{% endif %}
+	</div>
+
+	<!-- 右：説明 -->
+	<div class="right-column">
+		<h1>使い方</h1>
+		<p>山形鋼サイズやパラメータを入力して「計算」ボタンを押すと、shape_list 各行のテキストが生成されます。</p>
+		<ul>
+			<li><strong>親H型鋼/子H型鋼：</strong>“400x200x8x13” の形式で指定</li>
+			<li><strong>孔列数/孔ピッチ：</strong>ボルト孔の列数と間隔(mm)</li>
+			<li><strong>基準点：</strong>1～9 の数字で描画起点を選択</li>
+			<li><strong>s1/s2, 線色, 線種, レイヤー：</strong>JW-CAD のコード設定</li>
+		</ul>
+	</div>
+
+	<script>
+		function copyResult() {
+			const txt = document.getElementById("resultDisplay").innerText;
+			navigator.clipboard.writeText(txt).then(
+				() => alert("コピーしました"),
+				() => alert("コピー失敗")
+			);
+		}
+	</script>
+	<!-- index.html の <head> 内  または <body> タグ直下 -->
+	<script type="module">
+		import { set, get } from 'https://unpkg.com/idb-keyval@6.2.0?module';
+
+		const DIR_KEY = 'gusset-save-dir';
+		async function saveDirHandle(handle) { await set(DIR_KEY, handle) }
+		async function loadDirHandle() { return await get(DIR_KEY) }
+
+		window.initializeGussetSave = () => {
+			const pickBtn = document.getElementById('pickDirBtn');
+			const saveBtn = document.getElementById('saveInDirBtn');
+			const resultEl = document.getElementById('resultDisplay');
+			const fnameEl = document.getElementById('saveFilename');
+
+			pickBtn.addEventListener('click', async () => {
+				try {
+					const dirHandle = await window.showDirectoryPicker();
+					await saveDirHandle(dirHandle);
+					saveBtn.disabled = false;
+					alert(`保存先フォルダを 「${dirHandle.name}」 に設定しました`);
+				} catch {
+					alert('フォルダ選択をキャンセルしました');
+				}
+			});
+
+			saveBtn.addEventListener('click', async () => {
+				const dirHandle = await loadDirHandle();
+				if (!dirHandle) {
+					alert('まず「フォルダを選択」してください');
+					return;
+				}
+				try {
+					const filename = fnameEl.value;
+					const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+					const writable = await fileHandle.createWritable();
+					await writable.write(resultEl.innerText);
+					await writable.close();
+					alert(`"${filename}" を ${dirHandle.name} フォルダに保存しました`);
+				} catch {
+					alert('保存に失敗しました');
+				}
+			});
+		};
+	</script>
+	<!-- <body> の最後のほうに置いてください -->
+	<script>
+		window.addEventListener('DOMContentLoaded', () => {
+			if (window.initializeGussetSave) {
+				window.initializeGussetSave();
+			} else {
+				console.error('initializeGussetSave が定義されていません');
+			}
+		});
+	</script>
+</body>
+
+</html>
