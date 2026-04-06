@@ -4,6 +4,9 @@ import os
 from flask import Flask, render_template
 
 PAGE_LABELS = {
+    "gusset_type": "Gusset Type",
+    "gusset_flange_plate": "Gusset Flange Plate",
+    "gusset_web_plate": "Gusset Web Plate",
     "angle_size": "山形鋼",
     "chs_size": "丸パイプ",
     "column_size": "コラム断面",
@@ -48,6 +51,8 @@ def create_app() -> Flask:
         pages = []
         for name, bp in app.blueprints.items():
             if not bp.url_prefix:
+                continue
+            if name.endswith("_api") or bp.url_prefix.startswith("/api/"):
                 continue
             label = PAGE_LABELS.get(name.removesuffix("_api"), name)
             pages.append((label, f"{bp.url_prefix.rstrip('/')}/"))
