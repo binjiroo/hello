@@ -157,6 +157,11 @@
                 <option value="5">5</option>
             </select><br><br>
 
+            <label for="leader_follow" style="display:inline-flex; align-items:center; gap:8px;">
+                <input type="checkbox" name="leader_follow" id="leader_follow" value="1" {% if defaults.leader_follow=="1" %}checked{% endif %}>
+                指示線追従
+            </label><br><br>
+
             <!-- 前回の計算結果を隠しフィールドで渡す -->
             <textarea name="prev_result" style="display:none;">{{ result_str }}</textarea>
 

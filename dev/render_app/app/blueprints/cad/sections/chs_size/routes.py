@@ -1,6 +1,11 @@
 ﻿from flask import Blueprint, render_template, request, session
 
 from app.data.steel_mappings import chs_steel_r_mapping as steel_r_mapping
+from app.blueprints.cad.sections.size_dat_utils import (
+    build_dat_line,
+    insert_leader_follow_rows,
+    is_checked,
+)
 
 bp = Blueprint("chs_size", __name__, url_prefix="/cad/chs_size", template_folder="templates")
 
@@ -31,6 +36,7 @@ def get_defaults():
         "scale": session.get("scale", ""),
         "actual_size": session.get("actual_size", ""),
         "command": session.get("command", "1"),
+        "leader_follow": session.get("leader_follow", ""),
     }
 
 
@@ -86,6 +92,7 @@ def index():
 
         for key in defaults.keys():
             session[key] = request.form.get(key, defaults[key])
+        session["leader_follow"] = "1" if is_checked(request.form.get("leader_follow")) else ""
 
         session["steel_name"] = normalize_steel_name(session.get("steel_name", ""))
 
@@ -101,6 +108,7 @@ def index():
         scale = session["scale"]
         actual_size = session["actual_size"]
         command = session["command"]
+        leader_follow = is_checked(session["leader_follow"])
         prev_result = request.form.get("prev_result", "")
 
         if steel_name not in steel_r_mapping:
@@ -159,9 +167,11 @@ def index():
             [s1, s2, 0 + x_off, 0 + y_off, 0, 360, lc, lt, ly, "E", radius_inner],
             [separator, scale],
         ]
+        drawing_rows = insert_leader_follow_rows(shape_list[5:-1], leader_follow)
+        shape_list = shape_list[:5] + drawing_rows + shape_list[-1:]
 
         list_for_output = shape_list[3:] if action == "append" else shape_list
-        new_lines = [" ".join(str(item) for item in row) for row in list_for_output]
+        new_lines = [build_dat_line(row) for row in list_for_output]
         new_result = "\n".join(new_lines)
 
         result_str = (
