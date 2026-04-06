@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ガセットフランジプレート生成</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        h1 {
+            outline: 2px dashed rgb(255, 105, 30);
+            outline-offset: 6px;
+            display: inline-block;
+            padding: 6px 10px;
+        }
+
+        label {
+            background-color: rgb(200, 200, 255);
+            font-size: 14pt;
+            padding: 2px 6px;
+            margin: 0;
+        }
+
+        input,
+        select,
+        button,
+        textarea {
+            font-size: 14pt;
+            padding: 2px;
+            margin: 0;
+        }
+
+        pre {
+            font-size: 16pt;
+            padding: 10px;
+            margin: 0;
+            border: 1px solid #ccc;
+            white-space: pre-wrap;
+            max-height: 540px;
+            overflow: auto;
+        }
+
+        .actions button {
+            margin-right: 8px;
+        }
+
+        .left-column {
+            width: 60%;
+        }
+
+        .right-column {
+            width: 35%;
+            background: #f9f9f9;
+            padding: 20px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="left-column">
+        <h1>ガセットフランジプレート生成</h1>
+
+        {% if error_msg %}
+        <p style="color: red;">{{ error_msg }}</p>
+        {% endif %}
+
+        <form method="post">
+            <textarea name="prev_result" style="display:none;">{{ result_str }}</textarea>
+
+            <label for="h_type">主H形鋼サイズ</label><br>
+            <select name="h_type" id="h_type" required>
+                <option value="">--選択してください--</option>
+                {% for size in steel_sizes %}
+                <option value="{{ size }}" {% if defaults.h_type == size %}selected{% endif %}>{{ size }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="sub_h_type">副H形鋼サイズ</label><br>
+            <select name="sub_h_type" id="sub_h_type" required>
+                <option value="">--選択してください--</option>
+                {% for size in steel_sizes %}
+                <option value="{{ size }}" {% if defaults.sub_h_type == size %}selected{% endif %}>{{ size }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="hole_column">ボルト本数</label><br>
+            <select name="hole_column" id="hole_column">
+                {% for val in ["1", "2", "3", "4", "5"] %}
+                <option value="{{ val }}" {% if defaults.hole_column == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="hole_pitch">ボルトピッチ</label><br>
+            <select name="hole_pitch" id="hole_pitch">
+                {% for val in ["15", "30", "45", "60", "75", "90", "100", "120", "150", "175", "200"] %}
+                <option value="{{ val }}" {% if defaults.hole_pitch == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="gusset_name">ガセット名</label><br>
+            <input name="gusset_name" id="gusset_name" value="{{ defaults.gusset_name }}" required><br><br>
+
+            <label for="t">板厚 t</label><br>
+            <select name="t" id="t">
+                {% for val in ["1.6", "2.3", "3.2", "4.5", "6", "9", "12", "16", "19", "24", "27"] %}
+                <option value="{{ val }}" {% if defaults.t == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="s1">線色コード1</label><br>
+            <select name="s1" id="s1">
+                {% for val in ["10", "20", "01", "02", "03", "04", "05", "06", "07"] %}
+                <option value="{{ val }}" {% if defaults.s1 == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="s2">線色コード2</label><br>
+            <select name="s2" id="s2">
+                {% for val in ["10", "20", "01", "02", "03", "04", "05", "06", "07"] %}
+                <option value="{{ val }}" {% if defaults.s2 == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="off_choice">基準位置</label><br>
+            <select name="off_choice" id="off_choice">
+                {% for val in ["1", "2", "3", "4", "5", "6", "7", "8", "9"] %}
+                <option value="{{ val }}" {% if defaults.off_choice == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="lc">線色</label>
+            <select name="lc" id="lc">
+                {% for val in ["1", "2", "3", "4", "5", "6"] %}
+                <option value="{{ val }}" {% if defaults.lc == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="lt">線種</label>
+            <select name="lt" id="lt">
+                {% for val in ["1", "2", "3", "4", "5", "6", "7", "8", "9"] %}
+                <option value="{{ val }}" {% if defaults.lt == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="ly">レイヤー</label>
+            <select name="ly" id="ly">
+                {% for val in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "-11"] %}
+                <option value="{{ val }}" {% if defaults.ly == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="members">部材数</label>
+            <select name="members" id="members">
+                {% for val in ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30"] %}
+                <option value="{{ val }}" {% if defaults.members == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="separator">区切り記号</label>
+            <select name="separator" id="separator">
+                {% for val in ["999", "998", "997", "996", "995", "994", "993", "992", "991", "990"] %}
+                <option value="{{ val }}" {% if defaults.separator == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="scale">倍率</label>
+            <select name="scale" id="scale">
+                {% for val in ["", "0", "0.5", "1", "1.5", "2", "2.5", "3", "3.5", "4", "4.5", "5", "5.5", "6", "6.5", "7", "7.5", "8", "8.5", "9", "9.5", "10"] %}
+                <option value="{{ val }}" {% if defaults.scale == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="actual_size">実寸</label>
+            <select name="actual_size" id="actual_size">
+                {% for val in ["", "100", "200", "300", "700", "750", "751", "760", "761", "762", "763", "764", "765", "767", "768", "800", "10000", "11400", "12930"] %}
+                <option value="{{ val }}" {% if defaults.actual_size == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="command">コマンド番号</label>
+            <select name="command" id="command">
+                {% for val in ["1", "2", "3", "4", "5"] %}
+                <option value="{{ val }}" {% if defaults.command == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="leader_follow" style="display:inline-flex; align-items:center; gap:8px;">
+                <input type="checkbox" name="leader_follow" id="leader_follow" value="1" {% if defaults.leader_follow == "1" %}checked{% endif %}>
+                指示線追従
+            </label><br><br>
+
+            <div class="actions">
+                <button type="submit" name="action" value="new">新規生成</button>
+                <button type="submit" name="action" value="append">追加生成</button>
+                <button type="submit" name="action" value="clear">クリア</button>
+            </div>
+        </form>
+
+        <p><a href="{{ url_for('home') }}">ホームに戻る</a></p>
+
+        <label for="saveFilename">保存ファイル名</label>
+        <select name="saveFilename" id="saveFilename">
+            {% for fname in filenames %}
+            <option value="{{ fname }}">{{ fname }}</option>
+            {% endfor %}
+        </select><br><br>
+        <button type="button" id="pickDirBtn">保存先フォルダを選択</button>
+        <button type="button" id="saveInDirBtn" disabled>ディレクトリに保存</button>
+
+        {% if result_str %}
+        <h2>生成結果</h2>
+        <pre id="resultDisplay">{{ result_str }}</pre>
+        <br>
+        <button type="button" id="copyResultBtn">結果をコピー</button>
+        {% endif %}
+    </div>
+
+    <div class="right-column">
+        <h1>使い方</h1>
+        <p>主材と副材のH形鋼サイズ、ボルト条件、ガセット名を指定してフランジ側のガセットプレート用テキストを生成します。</p>
+        <ul>
+            <li>「新規生成」は現在の入力値で出力を作り直します。</li>
+            <li>「追加生成」は表示中の結果の末尾へ今回の結果を連結します。</li>
+            <li>保存先フォルダを選ぶと、表示中の結果をそのまま`.DAT`へ保存できます。</li>
+        </ul>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/cad/sections/gusset_flange_plate/main.js') }}"></script>
+</body>
+</html>

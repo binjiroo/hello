@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Gusset Type 生成</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        h1 {
+            outline: 2px dashed rgb(255, 105, 30);
+            outline-offset: 6px;
+            display: inline-block;
+            padding: 6px 10px;
+        }
+
+        label {
+            background-color: rgb(200, 200, 255);
+            font-size: 14pt;
+            padding: 2px 6px;
+            margin: 0;
+        }
+
+        input,
+        select,
+        button,
+        textarea {
+            font-size: 14pt;
+            padding: 2px;
+            margin: 0;
+        }
+
+        pre {
+            font-size: 16pt;
+            padding: 10px;
+            margin: 0;
+            border: 1px solid #ccc;
+            white-space: pre-wrap;
+            max-height: 540px;
+            overflow: auto;
+        }
+
+        .actions button {
+            margin-right: 8px;
+        }
+
+        .left-column {
+            width: 60%;
+        }
+
+        .right-column {
+            width: 35%;
+            background: #f9f9f9;
+            padding: 20px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="left-column">
+        <h1>Gusset Type 生成</h1>
+
+        {% if error_msg %}
+        <p style="color: red;">{{ error_msg }}</p>
+        {% endif %}
+
+        <form method="post">
+            <textarea name="prev_result" style="display:none;">{{ result_str }}</textarea>
+
+            <label for="steel_name">主H形鋼サイズ</label><br>
+            <select name="steel_name" id="steel_name" required>
+                <option value="">--選択してください--</option>
+                {% for size in steel_sizes %}
+                <option value="{{ size }}" {% if defaults.steel_name == size %}selected{% endif %}>{{ size }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="sub_steel_name">副H形鋼サイズ</label><br>
+            <select name="sub_steel_name" id="sub_steel_name" required>
+                <option value="">--選択してください--</option>
+                {% for size in steel_sizes %}
+                <option value="{{ size }}" {% if defaults.sub_steel_name == size %}selected{% endif %}>{{ size }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="s1">線色コード1</label><br>
+            <select name="s1" id="s1">
+                {% for val in ["10", "20", "01", "02", "03", "04", "05", "06", "07"] %}
+                <option value="{{ val }}" {% if defaults.s1 == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="s2">線色コード2</label><br>
+            <select name="s2" id="s2">
+                {% for val in ["10", "20", "01", "02", "03", "04", "05", "06", "07"] %}
+                <option value="{{ val }}" {% if defaults.s2 == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="b_set">部材数</label><br>
+            <input type="number" name="b_set" id="b_set" value="{{ defaults.b_set }}"><br><br>
+
+            <label for="y_set">オフセット量 y_set</label><br>
+            <input type="number" name="y_set" id="y_set" value="{{ defaults.y_set }}"><br><br>
+
+            <label for="yset_limit">y_set 許容差</label><br>
+            <input type="number" name="yset_limit" id="yset_limit" value="{{ defaults.yset_limit }}"><br><br>
+
+            <label for="offset_choice">基準位置</label><br>
+            <select name="offset_choice" id="offset_choice">
+                {% for val in ["1", "2", "3", "4", "5", "6", "7", "8", "9"] %}
+                <option value="{{ val }}" {% if defaults.offset_choice == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="t">板厚 t</label><br>
+            <select name="t" id="t">
+                {% for val in ["1.6", "2.3", "3.2", "4.5", "6", "9", "12", "16", "19", "24", "27"] %}
+                <option value="{{ val }}" {% if defaults.t == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="hole_column_x">穴列数</label><br>
+            <select name="hole_column_x" id="hole_column_x">
+                {% for val in ["1", "2", "3", "4", "5"] %}
+                <option value="{{ val }}" {% if defaults.hole_column_x == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="hole_row_y">穴行数</label><br>
+            <select name="hole_row_y" id="hole_row_y">
+                {% for val in ["1", "2", "3", "4", "5"] %}
+                <option value="{{ val }}" {% if defaults.hole_row_y == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="hole_pitch">列ピッチ</label><br>
+            <select name="hole_pitch" id="hole_pitch">
+                {% for val in ["15", "30", "45", "50", "60", "75", "90", "100", "120", "150", "175", "200"] %}
+                <option value="{{ val }}" {% if defaults.hole_pitch == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="row_hole_pitch">行ピッチ</label><br>
+            <select name="row_hole_pitch" id="row_hole_pitch">
+                {% for val in ["15", "30", "45", "50", "60", "75", "90", "100", "120", "150", "175", "200"] %}
+                <option value="{{ val }}" {% if defaults.row_hole_pitch == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="clearance">クリアランス</label><br>
+            <select name="clearance" id="clearance">
+                {% for val in ["0", "5", "10", "15", "20"] %}
+                <option value="{{ val }}" {% if defaults.clearance == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="end_hole_pitch">端部ピッチ</label><br>
+            <select name="end_hole_pitch" id="end_hole_pitch">
+                {% for val in ["20", "30", "40", "50", "60", "75", "90", "100", "120", "150", "175", "200"] %}
+                <option value="{{ val }}" {% if defaults.end_hole_pitch == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="hole_size">穴径</label><br>
+            <select name="hole_size" id="hole_size">
+                {% for val in ["0", "9", "12", "15", "18", "22", "24", "26", "30", "33"] %}
+                <option value="{{ val }}" {% if defaults.hole_size == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="lc">線色</label>
+            <select name="lc" id="lc">
+                {% for val in ["1", "2", "3", "4", "5", "6"] %}
+                <option value="{{ val }}" {% if defaults.lc == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="lt">線種</label>
+            <select name="lt" id="lt">
+                {% for val in ["1", "2", "3", "4", "5", "6", "7", "8", "9"] %}
+                <option value="{{ val }}" {% if defaults.lt == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="ly">レイヤー</label>
+            <select name="ly" id="ly">
+                {% for val in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "-11"] %}
+                <option value="{{ val }}" {% if defaults.ly == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="mode">モード</label><br>
+            <select name="mode" id="mode">
+                {% for val in ["1", "2"] %}
+                <option value="{{ val }}" {% if defaults.mode == val %}selected{% endif %}>{{ val }}</option>
+                {% endfor %}
+            </select><br><br>
+
+            <label for="leader_follow" style="display:inline-flex; align-items:center; gap:8px;">
+                <input type="checkbox" name="leader_follow" id="leader_follow" value="1" {% if defaults.leader_follow == "1" %}checked{% endif %}>
+                指示線追従
+            </label><br><br>
+
+            <div class="actions">
+                <button type="submit" name="action" value="new">新規生成</button>
+                <button type="submit" name="action" value="append">追加生成</button>
+                <button type="submit" name="action" value="clear">クリア</button>
+            </div>
+        </form>
+
+        <p><a href="{{ url_for('home') }}">ホームに戻る</a></p>
+
+        <label for="saveFilename">保存ファイル名</label>
+        <select name="saveFilename" id="saveFilename">
+            {% for fname in filenames %}
+            <option value="{{ fname }}">{{ fname }}</option>
+            {% endfor %}
+        </select><br><br>
+        <button type="button" id="pickDirBtn">保存先フォルダを選択</button>
+        <button type="button" id="saveInDirBtn" disabled>ディレクトリに保存</button>
+
+        {% if result_str %}
+        <h2>生成結果</h2>
+        <pre id="resultDisplay">{{ result_str }}</pre>
+        <br>
+        <button type="button" id="copyResultBtn">結果をコピー</button>
+        {% endif %}
+    </div>
+
+    <div class="right-column">
+        <h1>使い方</h1>
+        <p>主材と副材のH形鋼サイズ、穴配置、オフセット、モードを指定して、ガセットタイプのJW-CAD用テキストを生成します。</p>
+        <ul>
+            <li>モード1とモード2で切欠きの作図ルールが変わります。</li>
+            <li>追加生成では、現在表示されている結果の末尾に今回の出力を連結します。</li>
+            <li>y_set 許容差は mode 2 の逃げ処理で使う閾値です。</li>
+        </ul>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/cad/sections/gusset_type/main.js') }}"></script>
+</body>
+</html>
